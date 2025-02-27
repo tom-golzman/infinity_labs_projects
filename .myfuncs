@@ -1,9 +1,9 @@
 #
 #gcc compilation aliases: c89, c99, debug mode, release mode
 alias gd='gcc -ansi -pedantic-eroors -Wall -Wextra -g'
-alias gc='gcc -ansi -pedantic-eroors -Wall -Wextrg -DNDEGUB ->
+alias gc='gcc -ansi -pedantic-eroors -Wall -Wextrg -DNDEGUB -o3'
 alias gd9='gcc -std=c99 -pedantic-eroors -Wall -Wextra -g'
-alias gc9='gcc -std=c99 -pedantic-eroors -Wall -Wextrg -DNDEG>
+alias gc9='gcc -std=c99 -pedantic-eroors -Wall -Wextrg -DNDEG -o3'
 #
 #Valgrind alias
 alias vlg='valgrind --leak-check=yes --track-origins=yes'
