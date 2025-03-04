@@ -1,9 +1,11 @@
-#include "exe.h"
+#include "exercises.h"
+#include <string.h>
 
 void TestSwap ();
 void TestCpyArray();
 void TestPrintAddress();
 void TestSwapSizeT();
+void TestStrCmp();
 
 int main ()
 {
@@ -11,6 +13,7 @@ int main ()
 	TestCpyArray();
 	TestPrintAddress();
 	TestSwapSizeT();
+        TestStrCmp();
 	return 0;
 }
 
@@ -38,11 +41,12 @@ void TestCpyArray()
 {
 	int src[] = {1,2,3,4,5};
 	int dest[5];
+	size_t i;
 	
 	CpyArray(src, sizeof(src[0]), sizeof(src)/sizeof(src[0]), dest);
 	
 	printf("\nCopied array: ");
-	for (size_t i = 0; i < sizeof(src)/sizeof(src[0]); i++)
+	for (i = 0; i < sizeof(src)/sizeof(src[0]); i++)
 	{
 		printf("%d ", dest[i]);
 	}
@@ -75,6 +79,12 @@ void TestSwapSizeT()
 }
 
 
-
-
+void TestStrCmp()
+{
+  	char* str1 = "abc";
+  	char* str2 = "abcd";
+  
+  	printf("\nMine strcmp result:%d\n", StrCmp(str1,str2));
+  	printf("Built-in strcmp result: %d\n", strcmp(str1,str2));
+}
 
