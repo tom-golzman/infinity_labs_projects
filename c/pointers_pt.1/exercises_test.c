@@ -13,7 +13,7 @@ int main ()
 	TestCpyArray();
 	TestPrintAddress();
 	TestSwapSizeT();
-        TestStrCmp();
+      TestStrCmp();
 	return 0;
 }
 
