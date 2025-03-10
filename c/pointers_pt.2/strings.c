@@ -3,21 +3,24 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
 /** Hagai reviewed **/
 
 /** My strlen function **/
 size_t StrLen(const char* str)
 {
-	size_t len = 0;
+	const char* runner_ptr = NULL;
 	
 	assert(str != NULL);
 	
-	while (str[len] != '\0')
+	runner_ptr = str;
+	
+	while (*runner_ptr != '\0')
 	{
-		len++;
+		runner_ptr++;
 	}
 	
-	return (len);
+	return ((size_t)(runner_ptr - str));
 }
 
 /** My strcmp function **/
@@ -42,19 +45,18 @@ int StrCmp(const char* str1, const char* str2)
 /** My strncpy function **/
 char* StrCpy(char* dest, const char* src)
 {
-	char* destIndex = dest;
+	char* dest_index = dest;
 	
 	assert(dest != NULL);
 	assert(src != NULL);
 	
-	while(*src != '\0')
-	{
-		*destIndex = *src;
-		destIndex++;
+	do {
+		*dest_index = *src;
+		dest_index++;
 		src++;
-	}
+	} while (*src != '\0');
 	
-	*destIndex = '\0';
+	*dest_index = '\0';
 	
 	return (dest);
 }
@@ -62,22 +64,25 @@ char* StrCpy(char* dest, const char* src)
 /** My strncpy function **/
 char* StrNCpy(char* dest, const char* src, size_t n)
 {
-	size_t i;
-	char* dest_index = dest;
+	char* dest_runner = dest;
 	
 	assert(dest != NULL);
 	assert(src != NULL);	
 	
 	/* Copy from src to dest */
-	for(i = 0; src[i] != '\0' && i < n; i++)
+	while (*src != '\0' && n > 0)
 	{
-		dest_index[i] = src[i];
+		*dest_runner = *src;
+		dest_runner++;
+		src++;
+		n--;
 	}
 	
-	while(i < n)
+	while(n > 0)
 	{
-		dest_index[i] = '\0';
-		i++;
+		*dest_runner = '\0';
+		dest_runner++;
+		n--;
 	}
 	
 	return (dest);
@@ -91,7 +96,7 @@ int StrNCmp(const char* str1, const char* str2, size_t n)
 	assert(str1 != NULL);
 	assert(str2 != NULL);	
 	
-	while ((n != 0) && (*str1 != '\0') && (*str2 != '\0') && (*str1 == *str2))
+	while ((n > 0) && (*str1 != '\0') && (*str2 != '\0') && (*str1 == *str2))
 	{
 		str1++;
 		str2++;
@@ -111,16 +116,8 @@ int StrCaseCmp(const char* str1, const char* str2)
 	assert(str1 != NULL);
 	assert(str2 != NULL);	
 	
-	while((*str1 != '\0') && (*str2 != '\0'))
+	while((*str1 != '\0') && (*str2 != '\0') && (tolower(*str1) == tolower(*str2)))
 	{
-		char c1 = tolower(*str1);
-		char c2 = tolower(*str2);
-		
-		if(c1 != c2)
-		{
-			return (c1 - c2);
-		}
-		
 		str1++;
 		str2++;
 	}
@@ -158,12 +155,12 @@ char* StrChr(const char* str, int c)
 char* StrDup(const char* str)
 {
 	size_t len = StrLen(str) + 1; /* +1 for '\0' */
-	char* dup = (char*)malloc(len);
+	char* dup = (char*)malloc(len * sizeof(char)); 
 	
 	assert(str != NULL);
 	assert(dup != NULL);
 	
-	memcpy(dup, str, len);
+	StrNCpy(dup, str, len);
 	
 	return (dup);
 }
@@ -200,26 +197,23 @@ char* StrNCat(char* dest, const char* src, size_t n)
 char* StrStr(const char* haystack, const char* needle)
 {
 	size_t needle_size = StrLen(needle);
-	const char* haystack_ptr = haystack;
 	
 	assert(haystack != NULL);
 	assert(needle != NULL);
 	
-	while(*haystack_ptr != '\0')
-	{
-		if(*haystack_ptr == needle[0])
-		{
-			if(StrNCmp(haystack_ptr, needle, needle_size) == 0)
-			{
-				return (char*)(haystack_ptr);
-			}
-		}
-		haystack_ptr++;
-	}
-	
-	if(*haystack_ptr == '\0')
+	if (needle_size == 0)
 	{
 		return (char*)(haystack);
+	}
+	
+	while(StrChr(haystack, *needle) != NULL)
+	{
+		if(StrNCmp(haystack, needle, needle_size) == 0)
+		{
+			return (char*)(haystack);
+		}
+		
+		haystack++;
 	}
 	
 	return ((char*)NULL);
@@ -231,6 +225,7 @@ size_t StrSpn(const char* str1, const char* str2)
 {
 	size_t count = 0;
 	size_t ind;
+	
 	assert(str1 != NULL);
 	assert(str2 != NULL);
 	
@@ -252,3 +247,51 @@ size_t StrSpn(const char* str1, const char* str2)
 	
 	return (count);
 }
+
+/** My strtok function **/
+char* StrTok(char* str, const char* delim)
+{
+	static char* next = NULL;
+	
+	if(str == NULL)
+	{
+		str = next;
+	}
+	
+	/* Skip initial delimiters */
+	next = StrChr(str, *delim);
+	
+	if(next == NULL)
+	{
+		return (str);
+	}
+	
+	/* If a delimiter was found, replace it with '\0' to terminate the token */
+	if(*next != '\0')
+	{
+		*next = '\0';
+		next++;
+	}
+	else
+	{
+		next = NULL;
+	}
+	
+	return (str);
+}
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+

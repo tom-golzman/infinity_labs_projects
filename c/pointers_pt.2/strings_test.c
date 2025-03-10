@@ -9,9 +9,10 @@ void TestStrCaseCmp();
 void TestStrChr();
 void TestStrDup();
 void TestStrCat();
-/*void TestStrNCat();*/
+void TestStrNCat();
 void TestStrStr();
 void TestStrSpn(); 
+void TestStrTok();
 
 int main()
 {
@@ -24,9 +25,10 @@ int main()
 	TestStrChr();
 	TestStrDup();
 	TestStrCat();
-/*	TestStrNCat();*/
+	TestStrNCat();
 	TestStrStr(); 
 	TestStrSpn();
+	TestStrTok();
 	
 	return 0;
 }
@@ -111,20 +113,6 @@ void TestStrNCpy()
 
 void TestStrNCmp()
 {
-/*	char str1[] = "EQUAL";
-	char str2[] = "EQUAL";
-	char str3[] = "no equal";
-	char str4[] = "NO EQUAL";
-	size_t n = 5;
-	
-	printf("\n\033[1mTest StrNCmp:\033[0m\n");
-	printf("str1: %s | str2: %s | n = %lu\n", str1, str2, n);
-	printf("My StrNCmp => %d\n", StrNCmp(str1, str2, n));
-	printf("Built-in strncmp => %d\n", strncmp(str1, str2, n));
-	printf("\nstr3: %s | str4: %s | n = %lu\n", str3, str4, n);
-	printf("My StrNCmp => %d\n", StrNCmp(str3, str4, n));
-	printf("Built-in strncmp => %d\n", strncmp(str3, str4, n)); */
-	
 	char* str1 = "hello";
 	char* str2 = "hello2";
 	char* str3 = "hell3";
@@ -177,7 +165,7 @@ void TestStrDup()
 void TestStrCat()
 {
 	char src[] = "here";
-	char dest[12] = "copied ";
+	char dest[11] = "copied ";
 	char* result = StrCat(dest, src);
 	
 	printf("\n\033[1mTest StrCat:\033[0m\n");
@@ -194,38 +182,62 @@ void TestStrCat()
 	}
 }
 
+void TestStrNCat()
+{
+	char src[] = "hereblablabla";
+	char dest[12] = "copied ";
+	size_t n = 4;
+	char* result = StrNCat(dest, src, n);
+	
+	printf("\n\033[1mTest StrNCat:\033[0m\n");
+	printf("dest: %s | src: %s | n: %lu\n", dest, src, n);
+	printf("Result => %s\n", result);
+	if(StrCmp(result, "copied here") == 0)
+	{
+		printf("PASSED!\n");
+	}
+	
+	else
+	{
+		printf("FAILED!\n");
+	}
+}
+
 void TestStrStr()
 {
 	char haystack[] = "1234aabc5678";
 	char needle[] = "abc";
+	char* result = StrStr(haystack, needle);
 	
 	printf("\n\033[1mTest StrStr:\033[0m\n");
 	printf("haystack: %s | needle: %s\n", haystack, needle);
 	
-	printf("result: %s\n", StrStr(haystack, needle));
-	
-	/*if((StrStr(haystack, needle)) == NULL)
-	{
-		printf("no");
-	}
-	else
-	{
-		printf("yes");
-	}*/
+	printf("result: %s\n", result);
 }
 
 void TestStrSpn()
 {
-	char str1[] = "abc";
-	char str2[] = "abc";
-	
+	char str1[] = "hello12345";
+	char str2[] = "abcdefghijklmnop";
 	size_t res = strspn(str1, str2);
 
-	
-	printf("\n %lu\n", res);
+	printf("\n\033[1mTest StrStrSpn:\033[0m\n");
+	printf("str1: %s | str2: %s\n", str1, str2);
+	printf("result: %lu\n", res);
 }
 
-
+void TestStrTok()
+{
+	char str1[] = "it does nothing";
+	char str2[] = "hello, world, tom";
+	
+	printf("\n\033[1mTest StrStrTok:\033[0m\n");
+	printf("str1: %s | str2: %s\n", str1, str2);
+	
+	printf("result with str1 and \",\" -> %s\n", StrTok(str1, ","));
+	printf("result with str2 and \",\" -> %s\n", StrTok(str2, ","));
+	printf("result with str2 and \",\" -> %s\n", StrTok(NULL, ","));
+}
 
 
 
