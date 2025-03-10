@@ -18,8 +18,7 @@ char* StrCat(char* dest, const char* src);
 char* StrNCat(char* dest, const char* src, size_t n);
 char* StrStr(const char* haystack, const char* needle);
 size_t StrSpn(const char* str1, const char* str2);
-
-
+char* StrTok(char* str, const char* delim);
 
 
 
