@@ -1,18 +1,30 @@
+/**
+	Written by: Tom Golzman
+	Date: 11/03/2025
+	Reviewed by: Hagai Levi
+**/
+
 #include <stddef.h> /* For size_t */
 #include <stdlib.h> /* For malloc */
 #include <assert.h> 
 #include <stdio.h> /* printf */
 #include <ctype.h> /* tolower */
 #include <string.h> /* strlen */
-#include "../pointers_pt.2/strings.h" /* StrDup */
+#include "/home/tom/git/c/pointers_pt.2/strings.h" /* StrDup */
+
+#define FAILURE -1;
+#define SUCCESS 0;
 
 extern char** environ; /* Access the environment variables */
+
+size_t GetEnvironSize();
+void FreeBuffer(char** arr, size_t size);
+char* EnvVarToLower(char* env_var);
 
 void SumRows(const int* table[], long* sums, size_t rows, size_t columns)
 {
 	size_t i = 0, j = 0;
 	long row_sum = 0;
-	const int* row_ptr = *table;
 	
 	for (i = 0; i < rows; i++)
 	{
@@ -24,15 +36,16 @@ void SumRows(const int* table[], long* sums, size_t rows, size_t columns)
 		
 		*sums = row_sum;
 		sums++;
-		row_ptr++;
 	}	
 }
 
 size_t StayAlive(size_t size)
 {
-	size_t* arr = (size_t*)malloc(sizeof(size_t) * size);
 	size_t i = 0;
+	size_t* arr = (size_t*)malloc(sizeof(size_t) * size);
 	
+	assert(NULL != arr);
+		
 	arr[size-1] = 0;
 	
 	for (i = 0; i < size - 1; i++)
@@ -48,8 +61,7 @@ size_t StayAlive(size_t size)
 		i = arr[i];
 	} 
 	
-	free(arr);
-	
+	free(arr);	
 	arr = NULL;
 	
 	printf("\nThe last soldier is: %lu", i);
@@ -71,21 +83,50 @@ void PrintDataTypes(void)
 	printf("Sizeof(double) = %lu\n", sizeof(double));
 	printf("Sizeof(long double) = %lu\n", sizeof(long double)); 
 }
-/*
-static char* StrDup(const char* str)
+
+int PrintEnvVars(void)
 {
-	size_t len = strlen(str) + 1;
-	char* dup = (char*)malloc(len * sizeof(char)); 
+	size_t env_vars_size = 0, i = 0;
+	char** environ_copy = NULL;
+	char* curr_env_var = NULL;
+		
+	env_vars_size = GetEnvironSize();
 	
-	assert(str != NULL);
-	assert(dup != NULL);
+	environ_copy = (char**)malloc(sizeof(char*) * (env_vars_size + 1)); /*+1 for NULL */
 	
-	strncpy(dup, str, len);
+	if (NULL == environ_copy)
+	{
+		return (FAILURE);
+	}
 	
-	return (dup);
+	printf("Environment variables in lower case:\n");
+	
+	for (i = 0; i < env_vars_size; i++)
+	{
+		environ_copy[i] = StrDup(environ[i]);
+		
+		if (NULL == environ_copy[i])
+		{
+			FreeBuffer(environ_copy, i);
+			return (FAILURE);
+		}
+		
+		curr_env_var = environ_copy[i];
+		curr_env_var = EnvVarToLower(curr_env_var);
+		printf("%s\n", environ_copy[i]);
+	}
+	
+	environ_copy[env_vars_size] = NULL;
+	
+	FreeBuffer(environ_copy, env_vars_size);
+
+	free(environ_copy);
+	environ_copy = NULL;
+	
+	return (SUCCESS);
 }
-*/
-size_t GetEnvironSize()
+
+static size_t GetEnvironSize()
 {
 	size_t env_vars_size = 0, i = 0;
 	
@@ -98,7 +139,7 @@ size_t GetEnvironSize()
 	return (env_vars_size);
 }
 
-void FreeBuffer(char** arr, size_t size)
+static void FreeBuffer(char** arr, size_t size)
 {
 	size_t i = 0;
 	
@@ -111,7 +152,7 @@ void FreeBuffer(char** arr, size_t size)
 	arr = NULL;
 }
 
-char* EnvVarToLower(char* env_var)
+static char* EnvVarToLower(char* env_var)
 {
 	size_t env_var_runner = 0;
 	
@@ -123,59 +164,3 @@ char* EnvVarToLower(char* env_var)
 	
 	return (env_var);
 }
-
-int PrintEnvVars(void)
-{
-	size_t env_vars_size = 0, i = 0;
-	char** environ_copy = NULL;
-	char* curr_env_var = NULL;
-		
-	env_vars_size = GetEnvironSize();
-	
-	environ_copy = (char**)malloc(sizeof(char*) * (env_vars_size + 1)); /*+1 for NULL */
-	
-	if (environ_copy == NULL)
-	{
-		return (-1);
-	}
-	
-	printf("Environment variables in lower case:\n");
-	
-	for (i = 0; i < env_vars_size; i++)
-	{
-		environ_copy[i] = StrDup(environ[i]);
-		
-		if (environ_copy[i] == NULL)
-		{
-			FreeBuffer(environ_copy, i);
-			return (-1);
-		}
-		
-		curr_env_var = environ_copy[i];
-
-		curr_env_var = EnvVarToLower(curr_env_var);
-		
-		printf("%s\n", environ_copy[i]);
-	}
-	
-	environ_copy[env_vars_size] = NULL;
-	
-	FreeBuffer(environ_copy, env_vars_size);
-
-	free(environ_copy);
-	environ_copy = NULL;
-	
-	return (0);
-}
-
-
-
-
-
-
-
-
-
-
-
-
