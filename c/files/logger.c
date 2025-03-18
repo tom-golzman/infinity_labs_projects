@@ -9,10 +9,12 @@
 #include <string.h> /* For strcmp */
 #include <stdlib.h> /* For malloc */
 
+#define ROW_MAX_SIZE 1024
+
 /*---------------------typedef---------------------*/
 typedef enum
 {
-	SUCCESS,
+	SUCCESS = 0,
 	CONTINUE,
 	FILE_NOT_FOUND,
 	OPEN_ERROR,
@@ -44,18 +46,18 @@ static status_code_t WriteToEndOperation(const char* str, const char* file_path)
 /*-------------------------Handlers Array initialization-------------------------*/
 static command_handler_t handlers[5] = 
 	{
-        {"-exit\n", StringsCompare, ExitOperation},
-        {"-remove\n", StringsCompare, RemoveOperation},
-        {"-count\n", StringsCompare, CountOperation},
-        {"<", CharCompare, WriteToStartOperation},
-        {"", AlwaysEqual, WriteToEndOperation}
+        {"-exit\n"  , StringsCompare, ExitOperation        },
+        {"-remove\n", StringsCompare, RemoveOperation      },
+        {"-count\n" , StringsCompare, CountOperation       },
+        {"<"        , CharCompare   , WriteToStartOperation},
+        {""         , AlwaysEqual   , WriteToEndOperation  }
     	};
 
 /*---------------------main---------------------*/
 int main(int argc, const char** argv)
 {
 	const char* file_path = argv[1];	
-	char string_input[1024];
+	char string_input[ROW_MAX_SIZE];
 	status_code_t status = SUCCESS;
 	size_t i = 0;
 	
@@ -136,7 +138,7 @@ static status_code_t RemoveOperation(const char* str, const char* file_path)
 static status_code_t CountOperation(const char* str, const char* file_path)
 {
 	size_t count = 0;
-	char buffer[1024];
+	char buffer[ROW_MAX_SIZE];
 	FILE* file;
 	
 	file = fopen(file_path, "r");
@@ -146,7 +148,7 @@ static status_code_t CountOperation(const char* str, const char* file_path)
 		return (OPEN_ERROR);
 	}
 	
-	while (fgets(buffer, 1024, file) != NULL)
+	while (fgets(buffer, ROW_MAX_SIZE, file) != NULL)
 	{
 		count++;
 	}
@@ -213,10 +215,3 @@ static status_code_t WriteToEndOperation(const char* str, const char* file_path)
 	
 	return (SUCCESS);
 }
-
-
-
-
-
-
-
