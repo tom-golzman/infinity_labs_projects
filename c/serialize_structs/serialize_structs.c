@@ -182,9 +182,7 @@ status_t SaveStudentName(char* name, FILE* file)
 }
 
 status_t SaveGrades(grades_t* grades, FILE* file)
-{
-	status_t status = 0;
-	
+{	
 	if ((SUCCESS != SaveHumanisticGrades(&grades->humanistic, file))||
 		(SUCCESS != SaveRealGrades(&grades->real, file)) ||
 		(SUCCESS != SaveFloat(grades->sports, file)))
@@ -197,9 +195,6 @@ status_t SaveGrades(grades_t* grades, FILE* file)
 
 status_t SaveHumanisticGrades(humanistic_grades_t* humanistic_grades, FILE* file)
 {
-	status_t status = 0;
-	
-	status = ;
 	if ((SUCCESS != SaveFloat(humanistic_grades->sociology, file)) ||
 		(SUCCESS != SaveFloat(humanistic_grades->psychology, file)) ||
 		(SUCCESS != SaveFloat(humanistic_grades->literature, file)))
@@ -212,9 +207,6 @@ status_t SaveHumanisticGrades(humanistic_grades_t* humanistic_grades, FILE* file
 
 status_t SaveRealGrades(real_grades_t* real_grades, FILE* file)
 {
-	status_t status = 0;
-	
-	status = ;
 	if ((SUCCESS != SaveFloat(real_grades->math, file)) ||
 		(SUCCESS != SaveFloat(real_grades->chemistry, file)) ||
 		(SUCCESS != SaveFloat(real_grades->physics, file)))
