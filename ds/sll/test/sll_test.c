@@ -170,7 +170,7 @@ void TestFind()
 	  ListInsert(list, it, &vals[3 - i]);
 	}
 
-	found = ListFind(list, ListBegin(list), ListEnd(list), IsMatch, &target);
+	found = ListFind(ListBegin(list), ListEnd(list), IsMatch, &target);
 	if (*(int*)ListGetData(found) != 15)
 	{
 	  printf("[FAIL] TestFind\n");
