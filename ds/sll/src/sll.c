@@ -217,13 +217,12 @@ void ListDestroy(list_t* list)
     list = NULL;
 }
 
-iter_t ListFind(list_t* list, iter_t from, iter_t to, is_match_t is_match, void* data_to_find)
+iter_t ListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find)
 {
 	node_t* casted_from = IterToNode(from);
 	node_t* casted_to = IterToNode(to);	
 	node_t* runner = IterToNode(from);
 
-	assert(NULL != list);
 	assert(NULL != is_match);
 
 	for (runner = casted_from; runner != casted_to; runner = runner->next)

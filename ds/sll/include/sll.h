@@ -24,4 +24,4 @@ iter_t ListNext(iter_t iter);
 iter_t ListBegin(const list_t* list);
 iter_t ListEnd(const list_t* list);
 void ListForEach(iter_t from ,iter_t to, action_t action_func, void* param);
-iter_t ListFind(list_t* list, iter_t from, iter_t to, is_match_t is_match, void* data_to_find);
+iter_t ListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find);
