@@ -119,7 +119,6 @@ unsigned char ByteMirrorNoLoop(unsigned char n)
 	n = (((n & nibble_left) << 4) | ((n & nibble_right) >> 4));
 	
 	return (n);
-	
 }
 
 int Is2n6BitsOn(unsigned char c)
