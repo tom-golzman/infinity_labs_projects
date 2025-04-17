@@ -10,8 +10,8 @@
 #define BOLD "\033[1m"
 #define TITLE "\033[1;4m"
 
-#define SUCCESS 0
-#define FAIL 1
+#define SUCCESS (0)
+#define FAIL (1)
 
 /************************************Functions Forward Decleration************************************/
 void TestOListCreate();

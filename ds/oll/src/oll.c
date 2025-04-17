@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
 	Date: 16/04/2025
-	Reviewed By: 
+	Reviewed By: Sami
 **/
 
 /************************************includes************************************/
@@ -15,10 +15,10 @@
 #include "oll.h"
 
 /************************************define************************************/
-#define TRUE 1
-#define FALSE 0
-#define SUCCESS 0
-#define FAIL 1
+#define TRUE (1)
+#define FALSE (0)
+#define SUCCESS (0)
+#define FAIL (1)
 
 #ifndef NDEBUG /* debug */
 	#define D_TO_O_ITER_LIST(d_iter, o_list) (DllIterToOllIter(d_iter, o_list))
@@ -101,7 +101,10 @@ oll_t* OListCreate(olist_comparer_t comparer, void* param)
 
 void OListDestroy(oll_t* list)
 {
+	assert(NULL != list);
+	
 	DListDestroy(list->list);
+	list->list = NULL;
 	
 	free(list);
 	list = NULL;
@@ -109,60 +112,60 @@ void OListDestroy(oll_t* list)
 
 oll_iter_t OListInsert(oll_t* list, void* data)
 {
-	iter_t curr = NULL;
-	iter_t end = NULL;
-	iter_t new_node = NULL;
+	oll_iter_t from;
+    oll_iter_t to;
+    oll_iter_t insert_position;
+    iter_t new_node;
 
-	assert(NULL != list);
-	
-	curr = DListBegin(list->list);
-	end = DListEnd(list->list);
-	
-	while (!DListIsSameIter(curr, end) && list->comparer(DListGetData(curr), data, list->comparer_param) < 0)
-	{
-		curr = DListNext(curr);
-	}
-	
-	new_node = DListInsert(list->list, curr, data);
+    assert(NULL != list);
 
-	return (D_TO_O_ITER_LIST(new_node, list));
+    from = OListBegin(list);
+    to = OListEnd(list);
+
+    insert_position = OListFind(list, from, to, data);
+    new_node = DListInsert(list->list, O_TO_D_ITER(insert_position), data);
+
+    return (D_TO_O_ITER_LIST(new_node, list));
 }
 
 oll_iter_t OListRemove(oll_iter_t iter)
 {
-	iter_t result = DListRemove(O_TO_D_ITER(iter));
+	iter_t removed = DListRemove(OllIterToDllIter(iter));
 	
-	return (D_TO_O_ITER_ITER(result, iter));
+	return (D_TO_O_ITER_ITER(removed, iter));
 }
 
 void OListMerge(oll_t* dest, oll_t* src)
 {
-	iter_t dest_iter = NULL;
-	iter_t dest_end = NULL;
-	iter_t src_iter = NULL;
-	iter_t src_end = NULL;
-	iter_t next_src = NULL;
+	oll_iter_t src_iter;
+    oll_iter_t src_end;
+    oll_iter_t chunk_start;
+    oll_iter_t chunk_end;
+    oll_iter_t insert_pos;
 	
 	assert(NULL != dest);
 	assert(NULL != src);
 	
-	dest_iter = DListBegin(dest->list);
-	dest_end = DListEnd(dest->list);
-	src_iter = DListBegin(src->list);
-	src_end = DListEnd(src->list);
+	src_iter = OListBegin(src);
+	src_end = OListEnd(src);
+	chunk_start = src_iter;
+	chunk_end = src_iter;
 	
-	while (!DListIsSameIter(src_iter, src_end))
-	{
-		next_src = DListNext(src_iter);
+	while (!OListIsSameIter(chunk_start, src_end))
+    {
+        insert_pos = OListFind(dest, OListBegin(dest), OListEnd(dest), OListGetData(chunk_start));
+
+        chunk_end = chunk_start;
+        
+        while (!OListIsSameIter(chunk_end, src_end) && OListIsSameIter(OListFind(dest, OListBegin(dest), OListEnd(dest), OListGetData(chunk_end)), insert_pos))
+        {
+            chunk_end = OListNext(chunk_end);
+        }
 		
-		while (!DListIsSameIter(dest_iter, dest_end) && dest->comparer(DListGetData(dest_iter), DListGetData(src_iter), dest->comparer_param) < 0)
-		{
-			dest_iter = DListNext(dest_iter);
-		}
-		
-		DListSplice(dest_iter, src_iter, next_src);
-		src_iter = next_src;
-	}
+		DListSplice(OllIterToDllIter(insert_pos), OllIterToDllIter(chunk_start), OllIterToDllIter(chunk_end));
+
+        chunk_start = chunk_end;
+    }
 }
 
 size_t OListSize(const oll_t* list)
@@ -221,6 +224,7 @@ void OListForEach(oll_iter_t from ,oll_iter_t to, olist_action_t action, void* p
 	iter_t dll_iter_to = O_TO_D_ITER(to);
 	
 	assert(NULL != action);
+	assert(IsIterInSameList(from, to));
 	
 	DListForEach(dll_iter_from, dll_iter_to, action, param);
 }
@@ -230,10 +234,13 @@ oll_iter_t OListFind(const oll_t* list, oll_iter_t from, oll_iter_t to, const vo
 	iter_t dll_iter_from = O_TO_D_ITER(from);
 	iter_t dll_iter_to = O_TO_D_ITER(to);
 	iter_t curr = dll_iter_from;
+	
+	assert(NULL != list);	
+	assert(IsIterInSameList(from, to));
 
 	while (!DListIsSameIter(curr, dll_iter_to))
 	{
-		if (0 == list->comparer(DListGetData(curr), data_to_find, list->comparer_param))
+		if (0 <= list->comparer(DListGetData(curr), data_to_find, list->comparer_param))
 		{
 			return (D_TO_O_ITER_LIST(curr, list));
 		}
@@ -274,6 +281,8 @@ int OListIsSameIter(oll_iter_t iter1, oll_iter_t iter2)
 {
 	iter_t dll_iter1 = O_TO_D_ITER(iter1);
 	iter_t dll_iter2 = O_TO_D_ITER(iter2);
+
+	assert(IsIterInSameList(iter1, iter2));
 
 	return (DListIsSameIter(dll_iter1, dll_iter2));
 }
