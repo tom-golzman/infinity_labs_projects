@@ -7,7 +7,7 @@ SRC_DIR = src
 TEST_DIR = test
 BIN_DEBUG_DIR = bin/debug
 
-PROJECT_NAME = oll
+PROJECT_NAME = priority_queue
 TARGET = $(PROJECT_NAME)
 
 SRC_FILES = $(SRC_DIR)/$(PROJECT_NAME).c
@@ -16,20 +16,20 @@ INC_FILES = $(INCLUDE_DIR)/$(PROJECT_NAME).h
 
 SRC_OBJ_FILES = $(BIN_DEBUG_DIR)/$(notdir $(SRC_FILES:.c=.o))
 TEST_OBJ_FILES = $(BIN_DEBUG_DIR)/$(notdir $(TEST_FILES:.c=.o))
-OBJ_FILES = $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) /home/tom/git/ds/dll/bin/debug/dll.o
+OBJ_FILES = $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) /home/tom/git/ds/oll/bin/debug/oll.o /home/tom/git/ds/dll/bin/debug/dll.o
 
 .PHONY: all clean run
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -iquote /home/tom/git/ds/dll/include/ -o $@ $^
+	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -iquote /home/tom/git/ds/oll/include/ -iquote /home/tom/git/ds/dll/include/ -o $@ $^
 
 $(BIN_DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -iquote /home/tom/git/ds/dll/include/ -c $< -o $@
+	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -iquote /home/tom/git/ds/oll/include/ -iquote /home/tom/git/ds/dll/include/ -c $< -o $@
 
 $(BIN_DEBUG_DIR)/%.o: $(TEST_DIR)/%.c | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -iquote /home/tom/git/ds/dll/include/ -c $< -o $@
+	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -iquote /home/tom/git/ds/oll/include/ -iquote /home/tom/git/ds/dll/include/ -c $< -o $@
 
 $(BIN_DEBUG_DIR):
 	mkdir -p $(BIN_DEBUG_DIR)
@@ -47,4 +47,3 @@ vlg: $(TARGET)
 
 clean:
 	rm -f $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) $(TARGET)
-
