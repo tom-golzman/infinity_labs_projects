@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
 	Date: 16/04/2025
-	Reviewed By: 
+	Reviewed By: Sami
 **/
 
 /************************************includes************************************/
@@ -35,13 +35,23 @@ priority_queue_t* PQCreate(pq_comparer_t comparer, void* param)
 	assert(NULL != comparer);
 	
 	pq->olist = OListCreate(comparer, param);
+	if (NULL == pq->olist)
+	{
+		free(pq);
+		pq = NULL;
+		
+		return (NULL);
+	}
 	
 	return (pq);
 }
 
 void PQDestroy(priority_queue_t* pq)
 {
-	assert(NULL != pq);
+	if (NULL == pq)
+	{
+		return;
+	}
 
 	OListDestroy(pq->olist);
 	pq->olist = NULL;

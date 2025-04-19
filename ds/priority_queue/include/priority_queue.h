@@ -60,7 +60,7 @@ void PQDestroy(priority_queue_t* pq);
 		@arg2 - void* data.
 	LIMITATIONS:
 	COMPLEXITY: 
- 	   Time: O(1)
+ 	   Time: O(n)
 */
 int PQEnqueue(priority_queue_t* pq, void* data);
 
