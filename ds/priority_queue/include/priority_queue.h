@@ -1,7 +1,8 @@
-#ifndef __ILRD_PRIORITY_QUEUE__
-#define __ILRD_PRIORITY_QUEUE__
+#ifndef __ILRD_PRIORITY_QUEUE_H__
+#define __ILRD_PRIORITY_QUEUE_H__
 
 /************************************includes************************************/
+#include <stddef.h> /* size_t */
 
 /************************************typedef************************************/
 typedef struct pq priority_queue_t;
@@ -23,8 +24,6 @@ typedef int (*pq_comparer_t)(const void* data1, const void* data2, void* param);
 	RETURNS TRUE/FALSE 
 */
 typedef int (*pq_is_match_t)(const void* data1, const void* data2);
-
-/************************************define************************************/
 
 /************************************Functions************************************/
 /*
@@ -108,7 +107,6 @@ int PQIsEmpty(const priority_queue_t* pq);
 */
 size_t PQSize(const priority_queue_t* pq);
 
-
 /*
 	DESCRIPTION: Removes all elements in the priority queue
 	RETURNS: (nothing)
@@ -123,7 +121,7 @@ void PQClear(priority_queue_t* pq);
 
 /*
 	DESCRIPTION: Removes a specific element from the priority queue
-	RETURNS: (nothing)
+	RETURNS: the data we found, NULL if not found
 	ARGUMENTS:
 		@arg1 - priority_queue_t* pq - our priority queue
 		@arg2 - void* data - data for the element we want to remove
@@ -132,6 +130,6 @@ void PQClear(priority_queue_t* pq);
 	COMPLEXITY: 
 		Time: O(n)
 */
-void PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data);
+void* PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data);
 
-#endif
+#endif /* __ILRD_PRIORITY_QUEUE_H__ */

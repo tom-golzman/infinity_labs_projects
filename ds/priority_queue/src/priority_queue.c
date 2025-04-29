@@ -125,8 +125,9 @@ void PQClear(priority_queue_t* pq)
 	}
 } 
 
-void PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data)
+void* PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data)
 {
+	void* ret_data = NULL;
 	oll_iter_t from;
 	oll_iter_t to;
 	oll_iter_t found;
@@ -140,6 +141,9 @@ void PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data)
 	
 	if (!OListIsSameIter(found, to))
 	{
+		ret_data = OListGetData(found);
 		OListRemove(found);
 	}
+	
+	return (ret_data);
 } 
