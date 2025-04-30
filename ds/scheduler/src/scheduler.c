@@ -193,7 +193,6 @@ status_t SchedRun(sched_t* s)
 		
 		s->action_was_self_remove = FALSE;
 	}
-	
 
 	if (RUNNING == s->state)
 	{		
@@ -236,13 +235,12 @@ void SchedClear(sched_t* s)
 /************************************Private Functions************************************/
 static int SleepUntilExecTime(task_t* task)
 {
-	time_t now = 0;
+	time_t now = time(NULL);
 	time_t exec_time = 0;
 	time_t sleep_time = 0;
 	
 	assert (NULL != task);
 	
-	now = time(NULL);
 	if ((time_t)-1 == now)
 	{
 		return (FAIL);
@@ -253,7 +251,11 @@ static int SleepUntilExecTime(task_t* task)
 	if (exec_time > now)
 	{
 		sleep_time = exec_time - now;
-		sleep(sleep_time);
+		
+		while (sleep_time > 0)
+		{
+			sleep_time = sleep(sleep_time);
+		}
 	}
 	
 	return (SUCCESS);
