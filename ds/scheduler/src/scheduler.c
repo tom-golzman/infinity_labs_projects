@@ -167,6 +167,9 @@ status_t SchedRun(sched_t* s)
 
 		if (FAIL == SleepUntilExecTime(s->current_task))
 		{
+			s->current_task = NULL;
+			s->state = STOPPED;
+
 			return (INTERNAL_ERROR);
 		}
 		
