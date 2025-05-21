@@ -132,7 +132,7 @@ bit_array_t BitArrSetOff(bit_array_t arr, size_t index)
 bit_array_t BitArrToggle(bit_array_t arr, size_t index)
 {
 	size_t mask;
-	size_t curr_bit
+	size_t curr_bit;
 	
 	assert(index < WORD_SIZE_BITS);
 	

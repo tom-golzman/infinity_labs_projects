@@ -20,7 +20,7 @@
 /*************************************typedef*************************************/
 typedef struct block_header {
     size_t block_info; /* chunk size + bit status (0 - FREE / 1 - USED) */
-#ifdef DEBUG
+#ifndef NDEBUG
 	size_t magic_number;
 #endif
 } block_header_t;
@@ -32,7 +32,7 @@ static int GetBlockSize(block_header_t* header);
 static void MergeFreeBlocks(block_header_t* allocator);
 static void InitBlockHeader(block_header_t* header, size_t block_size, size_t status);
 static block_header_t* NextBlock(block_header_t* current_block);
-#ifdef DEBUG
+#ifndef NDEBUG
 	static int BlockHeaderIsValid(block_header_t* header);
 #endif
 
@@ -232,12 +232,12 @@ static void InitBlockHeader(block_header_t* header, size_t block_size, size_t st
 {
 	header->block_info = (block_size & ~IS_USED_MASK) | status;
 	
-#ifdef DEBUG
+#ifndef NDEBUG
 	header->magic_number = MAGIC_NUMBER;
 #endif
 }
 
-#ifdef DEBUG
+#ifndef NDEBUG
 	static int BlockHeaderIsValid(block_header_t* header)
 	{
 		(void)header;	

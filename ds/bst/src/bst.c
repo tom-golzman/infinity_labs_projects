@@ -44,7 +44,7 @@ static bst_iter_t BSTNodeToIter(bst_node_t* node);
 static bst_node_t* IterateInOrder(bst_node_t* node, direction_t direction);
 static bst_node_t* GetRightChild(bst_node_t* node);
 static bst_node_t* GetLeftChild(bst_node_t* node);
-#ifdef DEBUG
+#ifndef NDEBUG
 static int IsBegin(bst_node_t* node);
 static int IsEnd(bst_node_t* node);
 #endif
@@ -405,7 +405,7 @@ static bst_node_t* GetRightChild(bst_node_t* node)
 	return (node->right);
 }
 
-#ifdef DEBUG
+#ifndef NDEBUG
 static int IsBegin(bst_node_t* node)
 {
 	bst_node_t* current = node;

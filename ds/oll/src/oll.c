@@ -64,10 +64,12 @@ static iter_t OllIterToDllIter(oll_iter_t iter)
 	return (iter.iter);
 }
 
+#ifndef NDEBUG
 static int IsIterInSameList(oll_iter_t iter1, oll_iter_t iter2)
 {
 	return (iter1.list == iter2.list);
 }
+#endif
 
 /************************************Public Functions************************************/
 oll_t* OListCreate(olist_comparer_t comparer, void* param)

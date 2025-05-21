@@ -1,52 +1,72 @@
 CC = gcc
-CFLAGS = -ansi -pedantic-errors -Wall -Wextra -g
-GCOV_FLAGS = -fprofile-arcs -ftest-coverage
+BASE_CFLAGS = -ansi -pedantic-errors -Wall -Wextra -fPIC
+DEBUG_FLAGS = -g -DDEBUG
+RELEASE_FLAGS = -O3 -DNDEBUG
+
+CFLAGS_DEBUG = $(BASE_CFLAGS) $(DEBUG_FLAGS)
+CFLAGS_RELEASE = $(BASE_CFLAGS) $(RELEASE_FLAGS)
 
 INCLUDE_DIR = include
 SRC_DIR = src
 TEST_DIR = test
 BIN_DEBUG_DIR = bin/debug
+BIN_RELEASE_DIR = bin/release
 
 PROJECT_NAME = dll
-TARGET = ${PROJECT_NAME}
 
-SRC_FILES = $(SRC_DIR)/$(PROJECT_NAME).c
-TEST_FILES = $(TEST_DIR)/$(PROJECT_NAME)_test.c
-INC_FILES = $(INCLUDE_DIR)/$(PROJECT_NAME).h
+TARGET_DEBUG = $(PROJECT_NAME)_debug
+TARGET_RELEASE = $(PROJECT_NAME)_release
 
-SRC_OBJ_FILES = $(patsubst %.c, $(BIN_DEBUG_DIR)/%.o, $(notdir $(SRC_FILES)))
-TEST_OBJ_FILES = $(patsubst %.c, $(BIN_DEBUG_DIR)/%.o, $(notdir $(TEST_FILES)))
-OBJ_FILES = $(SRC_OBJ_FILES) $(TEST_OBJ_FILES)
+SRC_FILE = $(SRC_DIR)/$(PROJECT_NAME).c
+TEST_FILE = $(TEST_DIR)/$(PROJECT_NAME)_test.c
+INC_FILE = $(INCLUDE_DIR)/$(PROJECT_NAME).h
 
-.PHONY: all clean run
+SRC_OBJ_DEBUG = $(BIN_DEBUG_DIR)/$(PROJECT_NAME).o
+SRC_OBJ_RELEASE = $(BIN_RELEASE_DIR)/$(PROJECT_NAME).o
 
-all: $(TARGET)
+SHARED_LIB_DEBUG = $(BIN_DEBUG_DIR)/lib_debug_$(PROJECT_NAME).so
+SHARED_LIB_RELEASE = $(BIN_RELEASE_DIR)/lib_release_$(PROJECT_NAME).so
 
-$(TARGET): $(OBJ_FILES)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -o $@ $^
+.PHONY: all debug release coverage clean run run_release vlg
+
+all: debug
+
+debug: $(TARGET_DEBUG)
+release: $(TARGET_RELEASE)
+
+$(SHARED_LIB_DEBUG): $(SRC_OBJ_DEBUG) | $(BIN_DEBUG_DIR)
+	@$(CC) -shared -o $@ $^
+
+$(SHARED_LIB_RELEASE): $(SRC_OBJ_RELEASE) | $(BIN_RELEASE_DIR)
+	@$(CC) -shared -o $@ $^
 
 $(BIN_DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	@$(CC) $(CFLAGS_DEBUG) -I$(INCLUDE_DIR) -c $< -o $@
 
-$(BIN_DEBUG_DIR)/%.o: $(TEST_DIR)/%.c | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
-	
-$(BIN_DEBUG_DIR)/$(PROJECT_NAME)_test.o: $(TEST_FILES) $(INC_FILES) | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+$(BIN_RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_RELEASE_DIR)
+	@$(CC) $(CFLAGS_RELEASE) -I$(INCLUDE_DIR) -c $< -o $@
 
-$(BIN_DEBUG_DIR):
-	mkdir -p $(BIN_DEBUG_DIR)
+$(TARGET_DEBUG): $(TEST_FILE) $(SHARED_LIB_DEBUG)
+	@$(CC) $(CFLAGS_DEBUG) -I$(INCLUDE_DIR) $^ -o $@
 
-run: $(TARGET)
-	@./$(TARGET)
+$(TARGET_RELEASE): $(TEST_FILE) $(SHARED_LIB_RELEASE)
+	@$(CC) $(CFLAGS_RELEASE) -I$(INCLUDE_DIR) $^ -o $@
 
-coverage: clean
-	$(CC) $(CFLAGS) $(GCOV_FLAGS) -I$(INCLUDE_DIR) $(SRC_FILES) $(TEST_FILES) -o $(TARGET)
-	./$(TARGET)
-	gcov $(SRC_FILES)
+run: debug
+	@echo "DEBUG MODE"
+	@LD_LIBRARY_PATH=$(BIN_DEBUG_DIR) ./$(TARGET_DEBUG)
 
-vlg: $(TARGET)
-	valgrind --leak-check=yes --track-origins=yes ./$(TARGET)
+run_release: release
+	@echo "RELEASE MODE"
+	@LD_LIBRARY_PATH=$(BIN_RELEASE_DIR) ./$(TARGET_RELEASE)
+
+vlg: $(TARGET_DEBUG)
+	LD_LIBRARY_PATH=$(BIN_DEBUG_DIR) valgrind --leak-check=full --track-origins=yes ./$(TARGET_DEBUG)
+
+$(BIN_DEBUG_DIR) $(BIN_RELEASE_DIR):
+	mkdir -p $@
 
 clean:
-	rm -f $(SRC_OBJ_FILES) $(TEST_OBJ_FILES) $(TARGET)
+	@rm -rf $(TARGET_DEBUG) $(TARGET_RELEASE) \
+	       $(BIN_DEBUG_DIR)/*.o $(BIN_DEBUG_DIR)/*.so \
+	       $(BIN_RELEASE_DIR)/*.o $(BIN_RELEASE_DIR)/*.so

@@ -26,7 +26,7 @@ void TestAlignment();
 /************************************main************************************/
 int main(void)
 {
-#ifdef DEBUG
+#ifndef NDEBUG
 	printf(BOLD_TITLE "\nDEBUG VERSION\n" RESET);
 #else
 	printf(BOLD_TITLE "\nRELEASE VERSION\n" RESET);
@@ -103,7 +103,7 @@ void TestLargestChunk()
 	size_t result = 0;
 	void* pool = NULL;
 	vsa_t* allocator = NULL;
-#ifdef DEBUG
+#ifndef NDEBUG
 	size_t header_size = sizeof(size_t)*2;
 #else
 	size_t header_size = sizeof(size_t);
@@ -137,7 +137,7 @@ void TestLargestChunkAfterMalloc()
 	size_t result = 0;
 	void* pool = NULL;
 	vsa_t* allocator = NULL;
-#ifdef DEBUG
+#ifndef NDEBUG
 	size_t header_size = sizeof(size_t)*2;
 #else
 	size_t header_size = sizeof(size_t);
@@ -181,7 +181,7 @@ void TestLargestChunkAfterMallocAndFree()
     void* pool = malloc(pool_size);
     vsa_t* vsa = VSAInit(pool, pool_size);
     void* b2 = NULL;
-#ifdef DEBUG
+#ifndef NDEBUG
     size_t header_size = sizeof(size_t) * 2;
 #else
 	size_t F0, F1, F2, F3;
@@ -196,7 +196,7 @@ void TestLargestChunkAfterMallocAndFree()
 
     VSAFree(b2);
 
-#ifdef DEBUG
+#ifndef NDEBUG
 	expected = block_size;
 #else
 	F0 = pool_size - 2 * header_size;
