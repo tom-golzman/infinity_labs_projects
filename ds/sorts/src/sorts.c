@@ -11,10 +11,10 @@
 #include "sorts.h"
 
 /*************************************define*************************************/
-#define SUCCESS (0)
-#define FAIL (1)
-#define TRUE (1)
-#define FALSE (0)
+#define SUCCESS	(0)
+#define FAIL 	(1)
+#define TRUE 	(1)
+#define FALSE 	(0)
 
 /**********************Private Functions Forward Decleration**********************/
 static void SwapInts(int* x, int* y);
