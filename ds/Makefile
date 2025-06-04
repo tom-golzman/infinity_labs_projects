@@ -43,11 +43,11 @@ lib/liball_release.so: $(ALL_SRCS)
 	$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS)
 
 define make_test_rules
-$(1)/bin/debug/$(1).out: $(1)/test/$(1)_test.c lib/liball_debug.so
+$(1)/bin/debug/$(1).out: $(1)/test/test_$(1).c lib/liball_debug.so
 	@mkdir -p $(1)/bin/debug
 	$(CC) $(CFLAGS) -g -o $$@ $$< $(ALL_INCLUDE_DIRS) $(LDLIBS)
 
-$(1)/bin/release/$(1).out: $(1)/test/$(1)_test.c lib/liball_release.so
+$(1)/bin/release/$(1).out: $(1)/test/test_$(1).c lib/liball_release.so
 	@mkdir -p $(1)/bin/release
 	$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$< $(ALL_INCLUDE_DIRS) -Llib -lall_release
 endef
