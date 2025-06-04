@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
 	Date: 12/05/2025
-	Reviewed By: 
+	Reviewed By: Sami
 **/
 
 /************************************includes************************************/
@@ -13,12 +13,20 @@
 /*************************************define*************************************/
 #define SUCCESS (0)
 #define FAIL (1)
+#define TRUE (1)
+#define FALSE (0)
 
 /**********************Private Functions Forward Decleration**********************/
 static void SwapInts(int* x, int* y);
 static void CopyArray(int* arr1, int* arr2, size_t size);
 static void CumulativeCount(int* arr, size_t size);
 static int CountingSortByDigit(int* arr, size_t size, int exponent);
+static int BinarySearchHelper(int* arr, size_t low, size_t high, int num, size_t* index_result);
+static void MergeSortHelper(int* arr, int* temp, size_t low, size_t high);
+static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high);
+static void	QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
+static size_t Partition(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
+static void Swap(void* x, void* y, size_t elem_size);
 
 /************************************Functions************************************/
 void BubbleSort(int* arr, size_t size)
@@ -78,7 +86,7 @@ void InsertionSort(int* arr, size_t size)
 	
 	assert(NULL != arr);
 	
-	/* iterate each element starting from the second */
+	/* iterate each element lowing from the second */
 	for (i = 1; i < size; i++)
 	{
 		/* swap backwards while previous elements are bigger */
@@ -189,6 +197,153 @@ int RadixSort(int* arr, size_t size)
 	return (SUCCESS);
 }
 
+int BinarySearchIterative(int* arr, size_t size, int num, size_t* index_result)
+{
+	size_t low = 0;
+	size_t high = size - 1;
+	size_t mid = 0;
+	
+	assert(NULL != arr);
+
+	if (size < 1)
+	{
+		return (FALSE);
+	}
+	
+	while (low <= high)
+	{
+		mid = low + (high - low) / 2;
+		
+		if (arr[mid] == num)
+		{
+			*index_result = mid;
+			return (TRUE);
+		}
+		
+		if (arr[mid] > num)
+		{
+			high = mid - 1;
+		}
+		
+		else
+		{
+			low = mid + 1;
+		}
+	}
+	
+	return (FALSE);
+}
+
+int BinarySearchRecursive(int* arr, size_t size, int num, size_t* index_result)
+{
+	size_t low = 0;
+	size_t high = size - 1;
+	
+	assert(NULL != arr);
+
+	if (size < 1)
+	{
+		return (FALSE);
+	}
+	
+	return (BinarySearchHelper(arr, low, high, num, index_result));
+}
+
+int MergeSort(int* arr, size_t size)
+{
+	size_t low = 0;
+	size_t high = size - 1;
+	int* temp = NULL;
+	
+	assert(NULL != arr);
+	
+	if (size < 1)
+	{
+		return (FAIL);
+	}
+	
+	temp = (int*)malloc(size * sizeof(int));
+	if (NULL == temp)
+	{
+		return (FAIL);
+	}
+	
+	MergeSortHelper(arr, temp, low, high);
+	
+	free(temp);
+	temp = NULL;
+	
+	return (SUCCESS);
+}
+
+void QuickSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	size_t low = 0;
+	size_t high = num_of_elem - 1;
+	
+	assert(NULL != base);
+	assert(NULL != compar);
+	
+	if (num_of_elem < 1 || elem_size < 1)
+	{
+		return;
+	}
+	
+	QuickSortHelper((char*)base, low, high, elem_size, compar);
+}
+
+static void	QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	size_t pivot_index = 0;
+	
+	if (low < high)
+	{
+		pivot_index = Partition(base, low, high, elem_size, compar);
+		
+		if (pivot_index > 0)
+		{
+			QuickSortHelper(base, low, pivot_index - 1, elem_size, compar);
+		}
+		
+		QuickSortHelper(base, pivot_index + 1, high, elem_size, compar);
+	}
+}
+
+static size_t Partition(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	char* pivot = base + (high * elem_size);
+	size_t i = low;
+	size_t j = low;
+	
+	for (i = low; i < high; ++i)
+	{
+		if (compar(base + (i * elem_size), pivot) < 0)
+		{
+			Swap(base + (j * elem_size), base + (i * elem_size), elem_size);
+			++j;
+		}
+	}
+	
+	Swap(base + (j * elem_size), base + (high * elem_size), elem_size);
+	
+	return (j);
+}
+
+static void Swap(void* x, void* y, size_t elem_size)
+{
+	size_t i = 0;
+	char* x_runner = (char*)x;
+	char* y_runner = (char*)y;
+	char temp = 0;
+	
+	for (i = 0; i < elem_size; ++i)
+	{
+		temp = *(x_runner + i);
+		*(x_runner + i) = *(y_runner + i);
+		*(y_runner + i) = temp;
+	}
+}
+
 /***************************Private Functions***************************/
 static void SwapInts(int* x, int* y)
 {
@@ -259,4 +414,91 @@ static int CountingSortByDigit(int* arr, size_t size, int exponent)
 	output = NULL;
 	
 	return (SUCCESS);
+}
+
+static int BinarySearchHelper(int* arr, size_t low, size_t high, int num, size_t* index_result)
+{
+	size_t mid = low + (high - low) / 2;
+	
+	if (arr[mid] == num)
+	{
+		*index_result = mid;		
+		return (TRUE);
+	}
+	
+	if (low >= high)
+	{
+		return (FALSE);
+	}
+	
+	else if (arr[mid] > num)
+	{
+		return (BinarySearchHelper(arr, low, mid - 1, num, index_result));
+	}
+	
+	
+	else
+	{
+		return (BinarySearchHelper(arr, mid + 1, high, num, index_result));
+	}
+}
+
+static void MergeSortHelper(int* arr, int* temp, size_t low, size_t high)
+{
+	size_t mid = low + (high - low) / 2;
+	
+	if (low >= high)
+	{
+		return;
+	}
+	
+	MergeSortHelper(arr, temp, low, mid);
+	MergeSortHelper(arr, temp, mid + 1, high);	
+	Merge(arr, temp, low, mid, high);
+}
+
+static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high)
+{
+	size_t first_arr_runner = low;
+	size_t second_arr_runner = mid + 1;
+	size_t temp_index = low;
+	
+	/* merge to temp the sorted arrays */
+	while (first_arr_runner <= mid && second_arr_runner <= high)
+	{
+		if (arr[first_arr_runner] <= arr[second_arr_runner])
+		{
+			temp[temp_index] = arr[first_arr_runner];
+			++temp_index;
+			++first_arr_runner;
+		}
+		else
+		{
+			temp[temp_index] = arr[second_arr_runner];
+			++temp_index;
+			++second_arr_runner;
+		}
+	}
+	
+	/* merge the rest in the first array*/
+	while (first_arr_runner <= mid)
+	{
+		temp[temp_index] = arr[first_arr_runner];
+		++temp_index;
+		++first_arr_runner;
+	}
+	
+	/* merge the rest in the second array*/
+	while (second_arr_runner <= high)
+	{
+		temp[temp_index] = arr[second_arr_runner];
+		++temp_index;
+		++second_arr_runner;
+	}
+	
+	/* copy from temp to the original array */
+	for (first_arr_runner = low; first_arr_runner <= high; ++first_arr_runner)
+	{
+		arr[first_arr_runner] = temp[first_arr_runner];
+	}
 }
