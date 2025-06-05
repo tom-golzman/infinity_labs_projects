@@ -248,9 +248,11 @@ void TestDListInsertRemove()
     DListDestroy(list);
 }
 
-int IntIsMatch(const void* data1, const void* data2)
+int IntIsMatch(const void* data1, const void* data2, const void* param)
 {
     return (*(int*)data1 == *(int*)data2);
+	
+	(void) param;
 }
 
 void TestDListFind()
@@ -265,7 +267,7 @@ void TestDListFind()
     DListPushBack(list, &b);
     DListPushBack(list, &c);
 
-    result = DListFind(DListBegin(list), DListEnd(list), IntIsMatch, &b);
+    result = DListFind(DListBegin(list), DListEnd(list), IntIsMatch, NULL, &b);
 
     if (*(int*)DListGetData(result) == b)
     {
@@ -291,7 +293,7 @@ void TestDListMultiFind()
     DListPushBack(list, &b);
     DListPushBack(list, &c);
 
-    DListMultiFind(DListBegin(list), DListEnd(list), IntIsMatch, &a, result);
+    DListMultiFind(DListBegin(list), DListEnd(list), IntIsMatch, NULL, &a, result);
 
     if (DListSize(result) == 2)
     {

@@ -181,9 +181,7 @@ void TestLargestChunkAfterMallocAndFree()
     void* pool = malloc(pool_size);
     vsa_t* vsa = VSAInit(pool, pool_size);
     void* b2 = NULL;
-#ifndef NDEBUG
-    size_t header_size = sizeof(size_t) * 2;
-#else
+#ifdef NDEBUG
 	size_t F0, F1, F2, F3;
     size_t header_size = sizeof(size_t);
 #endif

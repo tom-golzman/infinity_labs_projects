@@ -38,12 +38,10 @@ int SetInsert(set_t*, const void* key);
 **/
 size_t SetSize(const set_t*);
 
-int SetIsEmpty(const set_t*);
-
 /**
 	@RETURN: NULL if wasn't found
 **/
-void* SetFind(const set_t*, const void* data);
+void* SetFind(const set_t*, const void* key);
 
 /**
 	@RETURN: status

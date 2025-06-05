@@ -81,7 +81,10 @@ void DListDestroy(dll_t* list)
 	node_t* current = NULL;
 	node_t* next = NULL;
 
-	assert(NULL != list);
+	if (NULL == list)
+	{
+		return;
+	}
 
 	current = list->head;
 
@@ -255,7 +258,7 @@ void DListPopBack(dll_t* list)
 	DListRemove(DListPrev(DListEnd(list)));
 }
 
-void DListForEach(iter_t from ,iter_t to, action_t action_func, void* param)
+int DListForEach(iter_t from ,iter_t to, action_t action_func, void* param)
 {
 	node_t* runner = IterToNode(from);
 	node_t* end = IterToNode(to);
@@ -266,13 +269,13 @@ void DListForEach(iter_t from ,iter_t to, action_t action_func, void* param)
 	{
 		if (FAIL == action_func(runner->data, param))
 		{
-			return;
+			return (FAIL);
 		}
 		runner = runner->next;
 	}
 }
 
-iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find)
+iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, const void* is_match_param, void* data_to_find)
 {
 	node_t* runner = IterToNode(from);
 	node_t* end = IterToNode(to);
@@ -281,7 +284,7 @@ iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find
 
 	while (runner != end)
 	{
-		if (TRUE == is_match(runner->data, data_to_find))
+		if (TRUE == is_match(runner->data, data_to_find, is_match_param))
 		{
 			return (NodeToIter(runner));
 		}
@@ -291,7 +294,7 @@ iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find
 	return (to);
 }
 
-void DListMultiFind(iter_t from, iter_t to, is_match_t is_match, void* data, dll_t* dest)
+void DListMultiFind(iter_t from, iter_t to, is_match_t is_match, const void* is_match_param, void* data, dll_t* dest)
 {
 	node_t* runner = IterToNode(from);
 	node_t* end = IterToNode(to);
@@ -301,7 +304,7 @@ void DListMultiFind(iter_t from, iter_t to, is_match_t is_match, void* data, dll
 
 	while (runner != end)
 	{
-		if (TRUE == is_match(runner->data, data))
+		if (TRUE == is_match(runner->data, data, is_match_param))
 		{
 			DListPushBack(dest, runner->data);
 		}

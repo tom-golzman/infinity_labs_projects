@@ -9,7 +9,7 @@ typedef struct node_t* iter_t;
 typedef struct doubly_list_t dll_t;
 
 typedef int (*action_t)(void* data, void* param);
-typedef int (*is_match_t)(const void* data1, const void* data2);
+typedef int (*is_match_t)(const void* data1, const void* data2, const void*);
 
 /************************************Functions************************************/
 /*
@@ -206,7 +206,7 @@ void DListPopBack(dll_t* list);
 
 /*
 # DESCRIPTION: Performs action func on all iters in range excluding to
-# RETURNS: (nothing)
+# RETURNS: 0 on SUCCESS and 1 on FAILURE
 # ARGUMENTS:
     @arg1 - iter_t from
     @arg2 - iter_t to
@@ -216,7 +216,7 @@ void DListPopBack(dll_t* list);
 # COMPLEXITY: 
     Time: O(n)
 */
-void DListForEach(iter_t from ,iter_t to, action_t action_func, void* param);
+int DListForEach(iter_t from ,iter_t to, action_t action_func, void* param);
 
 /*
 # DESCRIPTION: Searches the given iter range for iter containing data_to_find and stores in found_iter
@@ -231,7 +231,7 @@ void DListForEach(iter_t from ,iter_t to, action_t action_func, void* param);
 # COMPLEXITY: 
     Time: O(n)
 */
-iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find);
+iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, const void* is_match_param, void* data_to_find);
 
 /*
 # DESCRIPTION: Searches the given iter range for iter containing data_to_find and stores in result_list
@@ -246,7 +246,7 @@ iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, void* data_to_find
 # COMPLEXITY: 
     Time: O(n)
 */
-void DListMultiFind(iter_t from, iter_t to, is_match_t is_match, void* data, dll_t* dest);
+void DListMultiFind(iter_t from, iter_t to, is_match_t is_match, const void* is_match_param, void* data, dll_t* dest);
 
 /*
 # DESCRIPTION: Merges two lists at splice_location iter by putting the dest before splice_location. Runs from from_source to to_source not including to_source so user can't splice dummy
