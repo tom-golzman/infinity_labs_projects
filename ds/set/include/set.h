@@ -31,7 +31,7 @@ void* SetRemove(set_t*, const void* key);
 /**
 	@RETURN: status. allocation can fail.
 **/
-int SetInsert(set_t*, const void* key);
+int SetInsert(set_t*, void* key);
 
 /**
 	@COMPLEXITY: ?
@@ -41,7 +41,7 @@ size_t SetSize(const set_t*);
 /**
 	@RETURN: NULL if wasn't found
 **/
-void* SetFind(const set_t*, const void* key);
+void* SetFind(set_t*, const void* key);
 
 /**
 	@RETURN: status

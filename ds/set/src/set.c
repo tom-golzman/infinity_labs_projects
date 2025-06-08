@@ -52,7 +52,7 @@ set_t* SetCreate(size_t capacity, set_is_same_key_t is_same_key, const void* is_
 	assert(NULL != hash_func);
 	
 	/* allocate memory for the set and the table*/
-	set = (set_t*)malloc(sizeof(*set));
+	set = (set_t*)malloc(sizeof(set_t));
 	if (NULL == set)
 	{
 		return (NULL);
@@ -124,10 +124,12 @@ void SetDestroy(set_t* set)
 	set->table = NULL;
 	
 	free(set);
-	set = NULL;
+	/* TODO: DEBUG_ONLY() */
+		/* TODO: BAD_MEM(set) */
+		set = NULL;
 }
 
-int SetInsert(set_t* set, const void* key)
+int SetInsert(set_t* set, void* key)
 {
 	size_t index = 0;
 	int insert_status = 0;
@@ -199,7 +201,7 @@ size_t SetSize(const set_t* set)
 	return (size);
 }
 
-void* SetFind(const set_t* set, const void* key)
+void* SetFind(set_t* set, const void* key)
 {
 	set_find_iter_result_t find_result;
 		

@@ -17,21 +17,25 @@ void PQDestroy(priority_queue_t* pq)
 int PQEnqueue(priority_queue_t* pq, void* data)
 {
 	/* assert */
-	/* insert to the end of the vector */
-	/* move the inserted value up to its place */
+	/* PushBack to the vector */
+	/* handle failure */
+	/* while */
+		/* */
 }
 
 void PQDequeue(priority_queue_t* pq)
 {
 	/* assert */
-	/* put the last element of the vector in the beginning */
-	/* move the first element down to its place */
+	/* copy the last element of the vector in the beginning */
+	/* PopBack to the vector */
+	/* while now the biggest of top3 */
+		/* swap with the largest child */
 }
 
 void* PQPeek(const priority_queue_t* pq)
 {
 	/* assert */
-	/* return the element in index 0 */
+	/* return the element in index 1 */
 }
 
 size_t PQSize(const priority_queue_t* pq)
