@@ -17,6 +17,8 @@ endif
 ALL_INCLUDE_DIRS := $(foreach proj,$(ALL_PROJECTS),-I$(proj)/include)
 ALL_SRCS := $(foreach proj,$(ALL_PROJECTS),$(wildcard $(proj)/src/*.c))
 
+UTILS_INCLUDE = -I ../utils/include
+
 DEBUG_SO := lib/liball_debug.so
 RELEASE_SO := lib/liball_release.so
 TEST_EXES := $(foreach proj,$(PROJECTS),$(proj)/bin/debug/$(proj).out)
@@ -38,20 +40,20 @@ release_test: release $(RELEASE_TEST_EXES)
 
 lib/liball_debug.so: $(ALL_SRCS)
 	@mkdir -p lib
-	$(CC) $(CFLAGS) -g -shared -o $@ $^ $(ALL_INCLUDE_DIRS)
+	$(CC) $(CFLAGS) -g -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
 
 lib/liball_release.so: $(ALL_SRCS)
 	@mkdir -p lib
-	$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS)
+	$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
 
 define make_test_rules
 $(1)/bin/debug/$(1).out: $(1)/test/*.c lib/liball_debug.so
 	@mkdir -p $(1)/bin/debug
-	$(CC) $(CFLAGS) -g -o $$@ $$< $(ALL_INCLUDE_DIRS) $(LDLIBS)
+	$(CC) $(CFLAGS) -g -o $$@ $$< $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE) $(LDLIBS)
 
 $(1)/bin/release/$(1).out: $(1)/test/*.c lib/liball_release.so
 	@mkdir -p $(1)/bin/release
-	$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$< $(ALL_INCLUDE_DIRS) -Llib -lall_release
+	$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$< $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE) -Llib -lall_release
 endef
 
 $(foreach proj,$(PROJECTS),$(eval $(call make_test_rules,$(proj))))

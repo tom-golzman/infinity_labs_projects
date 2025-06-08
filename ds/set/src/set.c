@@ -9,15 +9,9 @@
 #include <stdlib.h> /* malloc(), free() */
 
 #include "dll.h"	/* dll_t, iter_t */
-#include "set.h"
 
-/************************************define************************************/
-enum {
-	TRUE = 1,
-	FALSE = 0,
-	SUCCESS = 0,
-	FAIL = 1
-};
+#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
+#include "set.h"
 
 /************************************typedef************************************/
 struct set {
@@ -123,10 +117,15 @@ void SetDestroy(set_t* set)
 	free(set->table);
 	set->table = NULL;
 	
+	DEBUG_ONLY(
+		set->capacity = 0;
+		set->is_same_key = BAD_MEM64(set_is_same_key_t);
+		set->is_same_param = BAD_MEM64(void*);
+		set->hash_func = BAD_MEM64(hash_func_t);
+		set->hash_func_param = BAD_MEM64(void*);
+	);
+
 	free(set);
-	/* TODO: DEBUG_ONLY() */
-		/* TODO: BAD_MEM(set) */
-		set = NULL;
 }
 
 int SetInsert(set_t* set, void* key)

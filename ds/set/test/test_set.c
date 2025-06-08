@@ -1,6 +1,7 @@
 /************************************includes************************************/
 #include <stdio.h> /* printf */
 
+#include "utils.h" /* SUCCESS, FAIL, TRUE, FALSE */
 #include "set.h"
 
 /************************************define************************************/
@@ -10,13 +11,6 @@
 #define BOLD "\033[1m"
 #define BOLD_TITLE "\033[1;4m"
 #define TITLE "\033[4m"
-
-enum {
-	TRUE = 1,
-	FALSE =	0,
-	SUCCESS = 0,
-	FAIL = 1
-};
 
 typedef struct {
 	int key;
