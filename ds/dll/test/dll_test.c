@@ -341,7 +341,7 @@ void TestDListSplice()
 	DListDestroy(list2);
 }
 
-int MultiplyByParam(void* data, void* param)
+int MultiplyByParam(void* data, const void* param)
 {
     *(int*)data *= *(int*)param;
     return (SUCCESS);
@@ -350,7 +350,7 @@ int MultiplyByParam(void* data, void* param)
 void TestDListForEach()
 {
     int a = 1, b = 2, c = 3;
-    int multiplier = 2;
+    const int multiplier = 2;
     dll_t* list = DListCreate();
 
     printf(TITLE "\nTest: DListForEach()\n" RESET);

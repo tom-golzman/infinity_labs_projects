@@ -220,7 +220,7 @@ oll_iter_t OListPrev(oll_iter_t iter)
 	return (D_TO_O_ITER_ITER(DListPrev(dll_iter), iter));
 }
 
-void OListForEach(oll_iter_t from ,oll_iter_t to, olist_action_t action, void* param)
+void OListForEach(oll_iter_t from ,oll_iter_t to, olist_action_t action, const void* param)
 {
 	iter_t dll_iter_from = O_TO_D_ITER(from);
 	iter_t dll_iter_to = O_TO_D_ITER(to);

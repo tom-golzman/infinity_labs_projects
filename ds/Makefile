@@ -1,10 +1,11 @@
 CC = gcc
 CFLAGS = -ansi -pedantic-errors -Wall -Wextra -fPIC
 VLG = valgrind --leak-check=yes --track-origins=yes
+
+PROJECT := $(if $(p),$(p),$(PROJECT))
 PROJECT ?=
 
 TEST_FILES := $(wildcard */test/*.c)
-
 ALL_PROJECTS := $(sort $(foreach f, $(TEST_FILES), $(firstword $(subst /, ,$(f)))))
 
 ifeq ($(PROJECT),)
@@ -22,8 +23,6 @@ TEST_EXES := $(foreach proj,$(PROJECTS),$(proj)/bin/debug/$(proj).out)
 RELEASE_TEST_EXES := $(foreach proj,$(PROJECTS),$(proj)/bin/release/$(proj).out)
 
 LDLIBS := -Llib -lall_debug
-
-.PHONY: all debug release test release_test clean run run_release vlg gdb
 
 all: debug release
 
@@ -46,14 +45,13 @@ lib/liball_release.so: $(ALL_SRCS)
 	$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS)
 
 define make_test_rules
-TEST_SRC := $(firstword $(wildcard $(1)/test/test_$(1).c $(1)/test/$(1)_test.c))
 $(1)/bin/debug/$(1).out: $(1)/test/*.c lib/liball_debug.so
 	@mkdir -p $(1)/bin/debug
-	$(CC) $(CFLAGS) -g -o $$@ $$(TEST_SRC) $(ALL_INCLUDE_DIRS) $(LDLIBS)
+	$(CC) $(CFLAGS) -g -o $$@ $$< $(ALL_INCLUDE_DIRS) $(LDLIBS)
 
 $(1)/bin/release/$(1).out: $(1)/test/*.c lib/liball_release.so
 	@mkdir -p $(1)/bin/release
-	$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$(TEST_SRC) $(ALL_INCLUDE_DIRS) -Llib -lall_release
+	$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$< $(ALL_INCLUDE_DIRS) -Llib -lall_release
 endef
 
 $(foreach proj,$(PROJECTS),$(eval $(call make_test_rules,$(proj))))
@@ -90,3 +88,5 @@ clean:
 		rm -f $$d/bin/debug/*.out $$d/bin/release/*.out; \
 	done
 	@rm -f lib/liball_debug.so lib/liball_release.so
+
+.PHONY: all debug release test release_test clean run run_release vlg gdb

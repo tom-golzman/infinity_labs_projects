@@ -21,7 +21,7 @@ typedef struct ordered_list_iter oll_iter_t;
 /*
 	RETURNS: 0 on success, 1 on failure
 */
-typedef int (*olist_action_t)(void* data, void* param);
+typedef int (*olist_action_t)(void* data, const void* param);
 
 /*
 	DESCRIPTION: compare between 2 arguments with a reference to external param
@@ -191,7 +191,7 @@ oll_iter_t OListPrev(oll_iter_t iter);
 	COMPLEXITY: 
 		Time: O(n)
 */
-void OListForEach(oll_iter_t from ,oll_iter_t to, olist_action_t action, void* param);
+void OListForEach(oll_iter_t from ,oll_iter_t to, olist_action_t action, const void* param);
 
 /*
 	DESCRIPTION: Checking between from and to ([from-to)) to see if we can find data. If we find it, return its iterator. or iterator to on failure.

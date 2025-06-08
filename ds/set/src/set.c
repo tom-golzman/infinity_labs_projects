@@ -228,12 +228,15 @@ int SetForEach(set_t* set, set_action_func_t action_func , void* param)
 	assert(NULL != set);
 	assert(NULL != action_func);
 	
+	curr = set->table;
+	end = set->table + set->capacity;
+	
 	/* iterate all the hash table and run the action_func on the data */
 	while (curr != end)
 	{
 		if (NULL != *curr)
 		{
-			action_func_status = DListForEach(DListBegin(*curr), DListEnd(*curr), (action_t)action_func, param);
+			action_func_status = DListForEach(DListBegin(*curr), DListEnd(*curr), action_func, param);
 		}
 		
 		/* on first fail return the status */
@@ -241,7 +244,7 @@ int SetForEach(set_t* set, set_action_func_t action_func , void* param)
 		{
 			return (action_func_status);
 		}
-		
+
 		++curr;
 	}
 	

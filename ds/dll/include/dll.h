@@ -8,7 +8,7 @@
 typedef struct node_t* iter_t;
 typedef struct doubly_list_t dll_t;
 
-typedef int (*action_t)(void* data, void* param);
+typedef int (*action_t)(void* data, const void* param);
 typedef int (*is_match_t)(const void* data1, const void* data2, const void*);
 
 /************************************Functions************************************/
@@ -216,7 +216,7 @@ void DListPopBack(dll_t* list);
 # COMPLEXITY: 
     Time: O(n)
 */
-int DListForEach(iter_t from ,iter_t to, action_t action_func, void* param);
+int DListForEach(iter_t from ,iter_t to, action_t action_func, const void* param);
 
 /*
 # DESCRIPTION: Searches the given iter range for iter containing data_to_find and stores in found_iter

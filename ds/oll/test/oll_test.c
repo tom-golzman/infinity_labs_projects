@@ -34,7 +34,7 @@ void TestOListPopBack();
 
 int CompareInts(const void* a, const void* b, void* param);
 int IsMatch(const void* a, const void* b);
-int MultiplyByParam(void* data, void* param);
+int MultiplyByParam(void* data, const void* param);
 
 /************************************main************************************/
 int main(void)
@@ -449,7 +449,7 @@ void TestOListPopBack(void)
 void TestOListForEach(void)
 {
 	int a = 1, b = 2, c = 3;
-	int mult = 2;
+	const int mult = 2;
 	oll_t* list = OListCreate(CompareInts, NULL);
 	
 	printf(TITLE "\nTest: OListForEach()\n" RESET);
@@ -483,7 +483,7 @@ int IsMatch(const void* a, const void* b)
     return *(int*)a == *(int*)b;
 }
 
-int MultiplyByParam(void* data, void* param)
+int MultiplyByParam(void* data, const void* param)
 {
     *(int*)data *= *(int*)param;
     return SUCCESS;

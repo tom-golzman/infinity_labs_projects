@@ -258,7 +258,7 @@ void DListPopBack(dll_t* list)
 	DListRemove(DListPrev(DListEnd(list)));
 }
 
-int DListForEach(iter_t from ,iter_t to, action_t action_func, void* param)
+int DListForEach(iter_t from ,iter_t to, action_t action_func, const void* param)
 {
 	node_t* runner = IterToNode(from);
 	node_t* end = IterToNode(to);
@@ -273,6 +273,8 @@ int DListForEach(iter_t from ,iter_t to, action_t action_func, void* param)
 		}
 		runner = runner->next;
 	}
+	
+	return (SUCCESS);
 }
 
 iter_t DListFind(iter_t from, iter_t to, is_match_t is_match, const void* is_match_param, void* data_to_find)
