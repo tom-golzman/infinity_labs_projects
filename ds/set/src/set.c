@@ -115,9 +115,9 @@ void SetDestroy(set_t* set)
 	
 	/* free the memory of the set and the table */
 	free(set->table);
-	set->table = NULL;
 	
 	DEBUG_ONLY(
+		set->table = BAD_MEM64(dll_t**);
 		set->capacity = 0;
 		set->is_same_key = BAD_MEM64(set_is_same_key_t);
 		set->is_same_param = BAD_MEM64(void*);

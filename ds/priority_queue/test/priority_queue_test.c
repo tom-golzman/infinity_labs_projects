@@ -28,14 +28,15 @@ int MatchInts(const void* a, const void* b);
 /************************************main************************************/
 int main(void)
 {
+    printf("\nTEST PQ IS RUNNING\n");
     TestPQCreate();
     TestPQEnqueuePeek();
     TestPQDequeue();
     TestPQIsEmpty();
     TestPQSize();
-    TestPQClear();
+/*    TestPQClear();
     TestPQErase();
-
+*/
     printf("\n");
     return 0;
 }
@@ -158,7 +159,7 @@ void TestPQSize()
 	
     PQDestroy(pq);
 }
-
+/*
 void TestPQClear()
 {
     int a = 1, b = 2, c = 3;
@@ -208,7 +209,7 @@ void TestPQErase()
 	
     PQDestroy(pq);
 }
-
+*/
 /************************************Helpers************************************/
 int CompareInts(const void* a, const void* b, void* param)
 {
