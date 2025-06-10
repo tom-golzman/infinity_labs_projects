@@ -382,25 +382,19 @@ void TestHeapSort()
 {
 	int min_rand_val = 1000000;
 	int max_rand_val = 9999999;
-	int arr1[10];
+	int arr1[SIZE];
 	size_t i = 0;
 	
 	printf(BOLD_TITLE "\nTest HeapSort():\n" RESET);
 	
-	for (i = 0; i < 10; ++i)
+	for (i = 0; i < SIZE; ++i)
 	{
-		/*arr1[i] = min_rand_val + (rand() % (max_rand_val - min_rand_val + 1)); */
-		arr1[i] = i + 1;
+		arr1[i] = min_rand_val + (rand() % (max_rand_val - min_rand_val + 1));
 	}
 
-/*	printf("\narr before haepSort\n");
-	PrintArr(arr1, 10);
-	*/
-	HeapSort(arr1, 10);
-/*	printf("\narr after haepSort\n");
-	PrintArr(arr1, 10);
-	*/
-	if (IsSorted(arr1, 10))
+	HeapSort(arr1, SIZE);
+
+	if (IsSorted(arr1, SIZE))
 	{
 		printf(GREEN "Test 1 PASSED!\n" RESET);
 	}
@@ -415,7 +409,7 @@ static void PrintArr(int* arr, size_t size)
 {
 	size_t i = 0;
 	
-	for (i = 0; i < 10; ++i)
+	for (i = 0; i < SIZE; ++i)
 	{
 		printf("%d ", arr[i]);
 	}

@@ -300,31 +300,19 @@ void HeapSort(int* arr, size_t size)
 	assert(NULL != arr);
 	
 	base = --arr;
-	size += 1;
 	
 	/* build max heap */
 	BuildMaxHeap(base, size);
 
-	/* for each element in the heap - first to last */
-	for (i = 1; i < size; ++i)
+	/* for each element in the heap - last to first */
+	for (i = size; i > 1; --i)
 	{
 		/* swap the first element (biggest) with current */
 		SwapInts(&base[1], &base[i]);
-		
-		/* heapify down the top */
-		HeapifyDown(base, 1, size);
-	}
-}
 
-static void PrintArr(int* arr, size_t size)
-{
-	size_t i = 0;
-	
-	for (i = 1; i <= 10; ++i)
-	{
-		printf("%d ", arr[i]);
+		/* heapify down the top */
+		HeapifyDown(base, 1, i - 1);
 	}
-	printf("\n");
 }
 
 /************************************Private Functions************************************/
@@ -541,7 +529,7 @@ static void BuildMaxHeap(int* arr, size_t size)
 	assert(NULL != arr);
 	
 	/* for each element in array - last to first */
-	for (i = (size / 2) ; i > 0; --i)
+	for (i = (size / 2) ; i >= 1; --i)
 	{
 		/* heapify down */
 		HeapifyDown(arr, i, size);
@@ -586,15 +574,8 @@ static void HeapifyDown(int* arr, size_t curr, size_t size)
 	/* while current is samller than the largest child */
 	while (arr[curr] < arr[largest_child])
 	{
-		printf("\n BEFORE SWAP: arr[curr(%lu)]=%d, arr[largest(%lu)]=%d\n",curr,  arr[curr], largest_child, arr[largest_child]);
-		printf("arr BEFORE :");
-		PrintArr(arr, size);
-		
 		/* swap the current with largest child */
 		SwapInts(&arr[curr], &arr[largest_child]);
-		printf("\n AFTER SWAP: arr[curr(%lu)]=%d, arr[largest(%lu)]=%d\n",curr,  arr[curr], largest_child, arr[largest_child]);
-		printf("arr AFTER :");
-		PrintArr(arr, size);
 		
 		/* update current and children index */
 		curr = largest_child;
