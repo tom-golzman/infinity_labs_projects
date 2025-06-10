@@ -2,7 +2,6 @@
 #define __UTILS_H__
 
 /* trash memory before free */
-
 #define BAD_MEM32(T)  	((T)0xDEADBEEF)
 #define BAD_MEM64(T)  	((T)0xBADC0FFEE0DDF00D)
 
