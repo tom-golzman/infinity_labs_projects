@@ -5,16 +5,11 @@
 **/
 
 /************************************includes************************************/
-#include <assert.h> /* assert */
-#include <stdlib.h> /* malloc */
+#include <assert.h>	/* assert */
+#include <stdlib.h>	/* malloc */
 
+#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
 #include "sorts.h"
-
-/*************************************define*************************************/
-#define SUCCESS	(0)
-#define FAIL 	(1)
-#define TRUE 	(1)
-#define FALSE 	(0)
 
 /**********************Private Functions Forward Decleration**********************/
 static void SwapInts(int* x, int* y);
@@ -24,9 +19,11 @@ static int CountingSortByDigit(int* arr, size_t size, int exponent);
 static int BinarySearchHelper(int* arr, size_t low, size_t high, int num, size_t* index_result);
 static void MergeSortHelper(int* arr, int* temp, size_t low, size_t high);
 static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high);
-static void	QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
+static void QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
 static size_t Partition(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
 static void Swap(void* x, void* y, size_t elem_size);
+static void HeapifyUp(void* base, size_t index, size_t elem_size, int (*compar)(const void*, const void*))
+static void HeapifyDown(void* base, size_t index, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
 
 /************************************Functions************************************/
 void BubbleSort(int* arr, size_t size)
@@ -292,7 +289,20 @@ void QuickSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(c
 	QuickSortHelper((char*)base, low, high, elem_size, compar);
 }
 
-static void	QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*))
+void HeapSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	/* assert */
+	assert(NULL != base);
+	assert(NULL != compar);
+	
+	/* build max heap */
+	/* iterate the array */
+		/* swap the first element (biggest) with the last */
+		/* heapify down */
+}
+
+/************************************Private Functions************************************/
+static void QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*))
 {
 	size_t pivot_index = 0;
 	
@@ -344,7 +354,6 @@ static void Swap(void* x, void* y, size_t elem_size)
 	}
 }
 
-/***************************Private Functions***************************/
 static void SwapInts(int* x, int* y)
 {
 	if (x == y)
@@ -501,4 +510,26 @@ static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high)
 	{
 		arr[first_arr_runner] = temp[first_arr_runner];
 	}
+}
+
+static void BuildMaxHeap(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	/* assert */
+	/* iterate on the array from the parent of the last parent until the beginning */
+		/* heapify down */
+}
+
+static void HeapifyUp(void* base, size_t index, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	/* asssert */
+	/* iterate on the array while the child is begore parent */
+		/* swap */
+}
+
+static void HeapifyDown(void* base, size_t index, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+{
+	/* assert */
+	/* find the largest child */
+	/* swap the current with largest child */
+	/* heapify down */
 }

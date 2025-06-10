@@ -18,5 +18,6 @@ int BinarySearchIterative(int* arr, size_t size, int num, size_t* index_result);
 int BinarySearchRecursive(int* arr, size_t size, int num, size_t* index_result);
 int MergeSort(int* arr, size_t size);
 void QuickSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*));
+void HeapSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*));
 
 #endif /*__ILRD_SORTS_H__*/
