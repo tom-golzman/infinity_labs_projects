@@ -4,19 +4,10 @@
 #include <time.h> /* clock_t */
 #include <string.h> /* memcmp() */
 
+#include "test_utils.h"
 #include "sorts.h"
 
 /************************************define************************************/
-#define GREEN "\033[1;32m"
-#define RED "\033[1;31m"
-#define RESET "\033[0m"
-#define BOLD "\033[1m"
-#define BOLD_TITLE "\033[1;4m"
-#define TITLE "\033[4m"
-
-#define TRUE (1)
-#define FALSE (0)
-
 #define SIZE 100
 
 /************************************Functions Forward Decleration************************************/
@@ -29,9 +20,11 @@ void TestBinarySearchIterative();
 void TestBinarySearchRecursive();
 void TestMergeSort();
 void TestQuickSort();
+void TestHeapSort();
 
 static int IsSorted(int* arr, size_t size);
 static int CompareInts(const void* x, const void* y);
+static void PrintArr(int* arr, size_t size);
 
 /************************************main************************************/
 int main(void)
@@ -44,8 +37,9 @@ int main(void)
 	TestBinarySearchIterative();
 	TestBinarySearchRecursive();
 	TestMergeSort();
-	TestQuickSort();	
-
+	TestQuickSort();
+	TestHeapSort();
+	
 	printf("\n");
 	
 	return (0);
@@ -384,14 +378,56 @@ void TestQuickSort()
 	}
 }
 
+void TestHeapSort()
+{
+	int min_rand_val = 1000000;
+	int max_rand_val = 9999999;
+	int arr1[10];
+	size_t i = 0;
+	
+	printf(BOLD_TITLE "\nTest HeapSort():\n" RESET);
+	
+	for (i = 0; i < 10; ++i)
+	{
+		/*arr1[i] = min_rand_val + (rand() % (max_rand_val - min_rand_val + 1)); */
+		arr1[i] = i + 1;
+	}
+
+/*	printf("\narr before haepSort\n");
+	PrintArr(arr1, 10);
+	*/
+	HeapSort(arr1, 10);
+/*	printf("\narr after haepSort\n");
+	PrintArr(arr1, 10);
+	*/
+	if (IsSorted(arr1, 10))
+	{
+		printf(GREEN "Test 1 PASSED!\n" RESET);
+	}
+	else
+	{
+		printf(RED "Test 1 Failed!\n" RESET);
+	}
+}
+
 /***************************Private Functions***************************/
+static void PrintArr(int* arr, size_t size)
+{
+	size_t i = 0;
+	
+	for (i = 0; i < 10; ++i)
+	{
+		printf("%d ", arr[i]);
+	}
+	printf("\n");
+}
 static int IsSorted(int* arr, size_t size)
 {
 	size_t i = 0;
 	
-	for (i = 1; i < size; i++)
+	for (i = 0; i < size - 1; i++)
 	{
-		if (arr[i - 1] > arr[i])
+		if (arr[i] > arr[i + 1])
 		{
 			return (FALSE);
 		}

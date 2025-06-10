@@ -22,9 +22,11 @@ static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high);
 static void QuickSortHelper(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
 static size_t Partition(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
 static void Swap(void* x, void* y, size_t elem_size);
-static void HeapifyUp(void* base, size_t index, size_t elem_size, int (*compar)(const void*, const void*))
-static void HeapifyDown(void* base, size_t index, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
-
+static void BuildMaxHeap(int* arr, size_t size);
+static void HeapifyUp(int* arr, size_t index);
+static void HeapifyDown(int* arr, size_t index, size_t size);
+static size_t Max(int* arr, size_t size, size_t index1, size_t index2);
+static void PrintArr(int* arr, size_t size);
 /************************************Functions************************************/
 void BubbleSort(int* arr, size_t size)
 {
@@ -289,16 +291,40 @@ void QuickSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(c
 	QuickSortHelper((char*)base, low, high, elem_size, compar);
 }
 
-void HeapSort(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+void HeapSort(int* arr, size_t size)
 {
+	int* base = NULL;
+	size_t i = 0;
+	
 	/* assert */
-	assert(NULL != base);
-	assert(NULL != compar);
+	assert(NULL != arr);
+	
+	base = --arr;
+	size += 1;
 	
 	/* build max heap */
-	/* iterate the array */
-		/* swap the first element (biggest) with the last */
-		/* heapify down */
+	BuildMaxHeap(base, size);
+
+	/* for each element in the heap - first to last */
+	for (i = 1; i < size; ++i)
+	{
+		/* swap the first element (biggest) with current */
+		SwapInts(&base[1], &base[i]);
+		
+		/* heapify down the top */
+		HeapifyDown(base, 1, size);
+	}
+}
+
+static void PrintArr(int* arr, size_t size)
+{
+	size_t i = 0;
+	
+	for (i = 1; i <= 10; ++i)
+	{
+		printf("%d ", arr[i]);
+	}
+	printf("\n");
 }
 
 /************************************Private Functions************************************/
@@ -356,14 +382,9 @@ static void Swap(void* x, void* y, size_t elem_size)
 
 static void SwapInts(int* x, int* y)
 {
-	if (x == y)
-	{
-		return;
-	}
-	
-	*x = *x + *y;
-	*y = *x - *y;
-	*x = *x - *y;
+	int temp = *x;
+	*x = *y;
+	*y = temp;
 }
 
 static void CopyArray(int* arr1, int* arr2, size_t size)
@@ -489,7 +510,7 @@ static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high)
 		}
 	}
 	
-	/* merge the rest in the first array*/
+	/* merge the rest in the first array */
 	while (first_arr_runner <= mid)
 	{
 		temp[temp_index] = arr[first_arr_runner];
@@ -497,7 +518,7 @@ static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high)
 		++first_arr_runner;
 	}
 	
-	/* merge the rest in the second array*/
+	/* merge the rest in the second array */
 	while (second_arr_runner <= high)
 	{
 		temp[temp_index] = arr[second_arr_runner];
@@ -512,24 +533,96 @@ static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high)
 	}
 }
 
-static void BuildMaxHeap(void* base, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+static void BuildMaxHeap(int* arr, size_t size)
 {
+	size_t i = 0;
+	
 	/* assert */
-	/* iterate on the array from the parent of the last parent until the beginning */
+	assert(NULL != arr);
+	
+	/* for each element in array - last to first */
+	for (i = (size / 2) ; i > 0; --i)
+	{
 		/* heapify down */
+		HeapifyDown(arr, i, size);
+	}
 }
 
-static void HeapifyUp(void* base, size_t index, size_t elem_size, int (*compar)(const void*, const void*))
+static void HeapifyUp(int* arr, size_t curr)
 {
+	size_t parent = curr / 2;
+	
 	/* asssert */
-	/* iterate on the array while the child is begore parent */
-		/* swap */
+	assert(NULL != arr);
+	
+	/* while current is before parent */
+	while (curr > 1 && arr[curr] > arr[parent])
+	{
+		/* swap current and parent*/
+		SwapInts(&arr[curr], &arr[parent]);
+		
+		/* update current and parent index */
+		curr = parent;
+		parent = curr / 2;
+	}
 }
 
-static void HeapifyDown(void* base, size_t index, size_t num_of_elem, size_t elem_size, int (*compar)(const void*, const void*))
+static void HeapifyDown(int* arr, size_t curr, size_t size)
 {
+	size_t left_child = curr * 2;
+	size_t right_child = (curr * 2) + 1;
+	size_t largest_child = 0;
+	
 	/* assert */
+	assert(NULL != arr);
+	
 	/* find the largest child */
-	/* swap the current with largest child */
-	/* heapify down */
+	largest_child = Max(arr, size, left_child, right_child);
+	if (0 == largest_child)
+	{
+		return;
+	}
+	
+	/* while current is samller than the largest child */
+	while (arr[curr] < arr[largest_child])
+	{
+		printf("\n BEFORE SWAP: arr[curr(%lu)]=%d, arr[largest(%lu)]=%d\n",curr,  arr[curr], largest_child, arr[largest_child]);
+		printf("arr BEFORE :");
+		PrintArr(arr, size);
+		
+		/* swap the current with largest child */
+		SwapInts(&arr[curr], &arr[largest_child]);
+		printf("\n AFTER SWAP: arr[curr(%lu)]=%d, arr[largest(%lu)]=%d\n",curr,  arr[curr], largest_child, arr[largest_child]);
+		printf("arr AFTER :");
+		PrintArr(arr, size);
+		
+		/* update current and children index */
+		curr = largest_child;
+		left_child = curr * 2;
+		right_child = (curr * 2) + 1;
+
+		/* find the largest child of the new current */
+		largest_child = Max(arr, size, left_child, right_child);
+		if (0 == largest_child)
+		{
+			return;
+		}
+	}
+}
+
+static size_t Max(int* arr, size_t size, size_t index1, size_t index2)
+{
+	assert(NULL != arr);
+	
+	if (index1 > size)
+	{
+		return (0);
+	}
+	
+	if (index2 > size)
+	{
+		return (index1);
+	}
+	
+	return (arr[index1] > arr[index2] ? index1 : index2);
 }
