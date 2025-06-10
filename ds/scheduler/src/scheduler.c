@@ -64,7 +64,6 @@ sched_t* SchedCreate(void)
 
 void SchedDestroy(sched_t* scheduler)
 {
-	assert(NULL != scheduler);
 	assert(RUNNING != scheduler->state);
 		
 	SchedClear(scheduler);

@@ -15,9 +15,10 @@ else
 endif
 
 ALL_INCLUDE_DIRS := $(foreach proj,$(ALL_PROJECTS),-I$(proj)/include)
-ALL_SRCS := $(foreach proj,$(ALL_PROJECTS),$(wildcard $(proj)/src/*.c))
+ALL_SRCS := $(foreach proj,$(ALL_PROJECTS),$(wildcard $(proj)/src/$(proj).c))
 
 UTILS_INCLUDE = -I ../utils/include
+TEST_UTILS_INCLUDE = -I ../utils/test
 
 DEBUG_SO := lib/liball_debug.so
 RELEASE_SO := lib/liball_release.so
@@ -40,20 +41,20 @@ release_test: release $(RELEASE_TEST_EXES)
 
 lib/liball_debug.so: $(ALL_SRCS)
 	@mkdir -p lib
-	$(CC) $(CFLAGS) -g -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
+	@$(CC) $(CFLAGS) -g -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
 
 lib/liball_release.so: $(ALL_SRCS)
 	@mkdir -p lib
-	$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
+	@$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
 
 define make_test_rules
 $(1)/bin/debug/$(1).out: $(1)/test/*.c lib/liball_debug.so
 	@mkdir -p $(1)/bin/debug
-	$(CC) $(CFLAGS) -g -o $$@ $$< $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE) $(LDLIBS)
+	@$(CC) $(CFLAGS) -g -o $$@ $$< $(ALL_INCLUDE_DIRS) $(TEST_UTILS_INCLUDE) $(LDLIBS)
 
 $(1)/bin/release/$(1).out: $(1)/test/*.c lib/liball_release.so
 	@mkdir -p $(1)/bin/release
-	$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$< $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE) -Llib -lall_release
+	@$(CC) $(CFLAGS) -O3 -DNDEBUG -o $$@ $$< $(ALL_INCLUDE_DIRS) $(TEST_UTILS_INCLUDE) -Llib -lall_release
 endef
 
 $(foreach proj,$(PROJECTS),$(eval $(call make_test_rules,$(proj))))
@@ -78,7 +79,7 @@ vlg: test
 
 gdb:
 ifeq ($(PROJECT),)
-	$(error You must specify a project: make gdb PROJECT=your_project)
+	@$(error You must specify a project: make gdb PROJECT=your_project)
 endif
 	@exe=$(PROJECT)/bin/debug/$(PROJECT).out; \
 	if [ ! -f $$exe ]; then echo "Executable not found. Build it with: make debug PROJECT=$(PROJECT)"; exit 1; fi; \

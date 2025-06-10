@@ -132,4 +132,9 @@ void PQClear(priority_queue_t* pq);
 */
 void* PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data);
 
+/*
+	DESCRIPTION: Print function
+*/
+void PQPrintTree(priority_queue_t* pq);
+
 #endif /* __ILRD_PRIORITY_QUEUE_H__ */

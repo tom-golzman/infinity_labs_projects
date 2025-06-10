@@ -1,17 +1,10 @@
 /************************************includes************************************/
 #include <stdio.h> /* printf */
 
-#include "utils.h" /* SUCCESS, FAIL, TRUE, FALSE */
+#include "test_utils.h" /* colors, titles, status, boolean */
 #include "set.h"
 
 /************************************define************************************/
-#define GREEN "\033[1;32m"
-#define RED "\033[1;31m"
-#define RESET "\033[0m"
-#define BOLD "\033[1m"
-#define BOLD_TITLE "\033[1;4m"
-#define TITLE "\033[4m"
-
 typedef struct {
 	int key;
 	int value;
