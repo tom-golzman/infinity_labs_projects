@@ -26,7 +26,10 @@ static void BuildMaxHeap(int* arr, size_t size);
 static void HeapifyUp(int* arr, size_t index);
 static void HeapifyDown(int* arr, size_t index, size_t size);
 static size_t Max(int* arr, size_t size, size_t index1, size_t index2);
-static void PrintArr(int* arr, size_t size);
+static size_t GetParentIdx(size_t current);
+static size_t GetLeftChildIdx(size_t parent);
+static size_t GetRightChildIdx(size_t parent);
+
 /************************************Functions************************************/
 void BubbleSort(int* arr, size_t size)
 {
@@ -298,6 +301,7 @@ void HeapSort(int* arr, size_t size)
 	
 	/* assert */
 	assert(NULL != arr);
+	assert(size > 0);
 	
 	base = --arr;
 	
@@ -527,6 +531,7 @@ static void BuildMaxHeap(int* arr, size_t size)
 	
 	/* assert */
 	assert(NULL != arr);
+	assert(size > 0);
 	
 	/* for each element in array - last to first */
 	for (i = (size / 2) ; i >= 1; --i)
@@ -538,10 +543,11 @@ static void BuildMaxHeap(int* arr, size_t size)
 
 static void HeapifyUp(int* arr, size_t curr)
 {
-	size_t parent = curr / 2;
+	size_t parent = GetParentIdx(curr);
 	
 	/* asssert */
 	assert(NULL != arr);
+	assert(curr > 0);
 	
 	/* while current is before parent */
 	while (curr > 1 && arr[curr] > arr[parent])
@@ -551,19 +557,21 @@ static void HeapifyUp(int* arr, size_t curr)
 		
 		/* update current and parent index */
 		curr = parent;
-		parent = curr / 2;
+		parent = GetParentIdx(curr);
 	}
 }
 
 static void HeapifyDown(int* arr, size_t curr, size_t size)
 {
-	size_t left_child = curr * 2;
-	size_t right_child = (curr * 2) + 1;
+	size_t left_child = GetLeftChildIdx(curr);
+	size_t right_child = GetRightChildIdx(curr);
 	size_t largest_child = 0;
 	
 	/* assert */
 	assert(NULL != arr);
-	
+	assert(size > 0);
+	assert(curr > 0);	
+		
 	/* find the largest child */
 	largest_child = Max(arr, size, left_child, right_child);
 	if (0 == largest_child)
@@ -579,8 +587,8 @@ static void HeapifyDown(int* arr, size_t curr, size_t size)
 		
 		/* update current and children index */
 		curr = largest_child;
-		left_child = curr * 2;
-		right_child = (curr * 2) + 1;
+		left_child = GetLeftChildIdx(curr);
+		right_child = GetRightChildIdx(curr);
 
 		/* find the largest child of the new current */
 		largest_child = Max(arr, size, left_child, right_child);
@@ -589,6 +597,27 @@ static void HeapifyDown(int* arr, size_t curr, size_t size)
 			return;
 		}
 	}
+}
+
+static size_t GetParentIdx(size_t current)
+{
+	assert(current > 0);
+	
+	return (current / 2);
+}
+
+static size_t GetLeftChildIdx(size_t parent)
+{
+	assert(parent > 0);
+	
+	return (parent * 2);
+}
+
+static size_t GetRightChildIdx(size_t parent)
+{
+	assert(parent > 0);
+	
+	return ((parent * 2) + 1);
 }
 
 static size_t Max(int* arr, size_t size, size_t index1, size_t index2)

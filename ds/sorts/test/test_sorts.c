@@ -24,7 +24,6 @@ void TestHeapSort();
 
 static int IsSorted(int* arr, size_t size);
 static int CompareInts(const void* x, const void* y);
-static void PrintArr(int* arr, size_t size);
 
 /************************************main************************************/
 int main(void)
@@ -54,7 +53,7 @@ void TestBubbleSort()
 	clock_t start, end;
 	double bubble_time = 0, qsort_time = 0;
 	
-	printf(TITLE "\nTest BuubleSort():\n" RESET);
+	printf(BOLD_TITLE "\nTest BuubleSort():\n" RESET);
 
 	for (i = 0; i < SIZE; i++)
 	{
@@ -90,7 +89,7 @@ void TestSelectionSort()
 	clock_t start, end;
 	double selection_time = 0, qsort_time = 0;
 		
-	printf(TITLE "\nTest SelectionSort():\n" RESET);
+	printf(BOLD_TITLE "\nTest SelectionSort():\n" RESET);
 	
 	for (i = 0; i < SIZE; i++)
 	{
@@ -126,7 +125,7 @@ void TestInsertionSort()
 	clock_t start, end;
 	double insertion_time = 0, qsort_time = 0;
 		
-	printf(TITLE "\nTest InsertionSort():\n" RESET);
+	printf(BOLD_TITLE "\nTest InsertionSort():\n" RESET);
 	
 	for (i = 0; i < SIZE; i++)
 	{
@@ -162,7 +161,7 @@ void TestCountingSort()
 	clock_t start, end;
 	double counting_time = 0, qsort_time = 0;
 		
-	printf(TITLE "\nTest CountingSort():\n" RESET);
+	printf(BOLD_TITLE "\nTest CountingSort():\n" RESET);
 	
 	for (i = 0; i < SIZE; i++)
 	{
@@ -200,7 +199,7 @@ void TestRadixSort()
 	clock_t start, end;
 	double radix_time = 0, qsort_time = 0;
 		
-	printf(TITLE "\nTest RadixSort():\n" RESET);
+	printf(BOLD_TITLE "\nTest RadixSort():\n" RESET);
 	
 	for (i = 0; i < SIZE; i++)
 	{
@@ -238,7 +237,7 @@ void TestBinarySearchIterative()
 	int result = FALSE;
 	size_t index_result = 0;
 		
-	printf(TITLE "\nTest BinarySearch() Iterative:\n" RESET);
+	printf(BOLD_TITLE "\nTest BinarySearch() Iterative:\n" RESET);
 	
 	for (i = 1; i < SIZE; i++)
 	{
@@ -405,16 +404,6 @@ void TestHeapSort()
 }
 
 /***************************Private Functions***************************/
-static void PrintArr(int* arr, size_t size)
-{
-	size_t i = 0;
-	
-	for (i = 0; i < SIZE; ++i)
-	{
-		printf("%d ", arr[i]);
-	}
-	printf("\n");
-}
 static int IsSorted(int* arr, size_t size)
 {
 	size_t i = 0;
