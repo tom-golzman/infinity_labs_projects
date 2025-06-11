@@ -366,9 +366,9 @@ static void Swap(void* x, void* y, size_t elem_size)
 	
 	for (i = 0; i < elem_size; ++i)
 	{
-		temp = *(x_runner + i);
-		*(x_runner + i) = *(y_runner + i);
-		*(y_runner + i) = temp;
+		temp = x_runner[i];
+		x_runner[i] = y_runner[i];
+		y_runner[i] = temp;
 	}
 }
 
@@ -491,15 +491,14 @@ static void Merge(int* arr, int* temp, size_t low, size_t mid, size_t high)
 		if (arr[first_arr_runner] <= arr[second_arr_runner])
 		{
 			temp[temp_index] = arr[first_arr_runner];
-			++temp_index;
 			++first_arr_runner;
 		}
 		else
 		{
 			temp[temp_index] = arr[second_arr_runner];
-			++temp_index;
 			++second_arr_runner;
 		}
+		++temp_index;
 	}
 	
 	/* merge the rest in the first array */
