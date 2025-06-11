@@ -411,6 +411,8 @@ static size_t GetLastElemIndex(const priority_queue_t* pq)
 }
 
 /************************************Print Functions************************************/
+#ifndef NDEBUG
+
 #include <stdio.h> /* printf */
 #define INDENT_STEP (5)
 
@@ -438,3 +440,5 @@ void PQPrintTree(priority_queue_t* pq)
 	printf( "\nPriority Queue Tree (rotated):\n" );
 	PrintTreeRec(pq, 0, 0);
 }
+
+#endif
