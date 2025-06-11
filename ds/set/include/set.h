@@ -30,6 +30,7 @@ void* SetRemove(set_t*, const void* key);
 
 /**
 	@RETURN: status. allocation can fail.
+	@LIMITATIONS: undefined to insert a key that already exists.	
 **/
 int SetInsert(set_t*, void* key);
 
