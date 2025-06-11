@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
 	Date: 08/05/2025
-	Reviewed By:
+	Reviewed By: Amir Granot
 **/
 
 /************************************includes************************************/
@@ -26,15 +26,17 @@ struct pq
 };
 
 /************************************Private Functions************************************/
-static size_t GetParent(priority_queue_t* pq, size_t index);
-static size_t GetLeftChild(priority_queue_t* pq, size_t index);
-static size_t GetRightChild(priority_queue_t* pq, size_t index);
-static size_t Min(priority_queue_t* pq, size_t index1, size_t index2);
+static size_t GetParent(size_t index);
+static size_t GetLeftChild(size_t index);
+static size_t GetRightChild(size_t index);
+static size_t Min(const priority_queue_t* pq, size_t index1, size_t index2);
 static void HeapifyUp(priority_queue_t* pq, size_t curr_elem_index);
 static void HeapifyDown(priority_queue_t* pq, size_t curr_elem_index);
 static void Swap(priority_queue_t* pq, size_t index1, size_t index2);
 static size_t FindElemIndexInVector(const priority_queue_t* pq, pq_is_match_t is_match, void* data);
 static size_t GetLastElemIndex(const priority_queue_t* pq);
+static void** GetBase(const priority_queue_t* pq);
+static void UpdateChildren(size_t curr, size_t* left_child, size_t* right_child);
 
 /************************************Public Functions************************************/
 priority_queue_t* PQCreate(pq_comparer_t comparer, void* param)
@@ -128,7 +130,7 @@ void PQDequeue(priority_queue_t* pq)
 		return;	
 	}
 	
-	last_elem_index = PQSize(pq) - 1;
+	last_elem_index = GetLastElemIndex(pq);
 	
 	/* swap the last element with the first element in the vector */	
 	Swap(pq, FIRST_ELEM_INDEX, last_elem_index);
@@ -226,52 +228,31 @@ void* PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data)
 }
 
 /************************************Private Functions************************************/
-static size_t GetParent(priority_queue_t* pq, size_t index)
+static size_t GetParent(size_t index)
 {
-	size_t parent = (index - 1) / 2;
+	assert(index > 0);
 
-	assert(NULL != pq->vector);
-	
-	if (index == FIRST_ELEM_INDEX)
-	{
-		return (PQSize(pq));
-	}
-	
-	return (parent);
+	return ((index - 1) / 2);
 }
 
-static size_t GetLeftChild(priority_queue_t* pq, size_t index)
+static size_t GetLeftChild(size_t index)
 {
-	size_t child = (index * 2) + 1;
-	
-	assert(NULL != pq->vector);
-	
-	if (child >= PQSize(pq))
-	{
-		return (PQSize(pq));
-	}
-	
-	return (child);
+	return ((index * 2) + 1);
 }
 
-static size_t GetRightChild(priority_queue_t* pq, size_t index)
+static size_t GetRightChild(size_t index)
 {
-	size_t child = (index * 2) + 2;
-	
-	assert(NULL != pq->vector);
-	
-	if (child >= PQSize(pq))
-	{
-		return (PQSize(pq));
-	}
-	
-	return (child);
+	return ((index * 2) + 2);
 }
 
-static size_t Min(priority_queue_t* pq, size_t index1, size_t index2)
+static size_t Min(const priority_queue_t* pq, size_t index1, size_t index2)
 {
+	void** base = NULL;
+	
 	assert(NULL != pq);
 
+	base = GetBase(pq);
+	
 	if (index1 >= PQSize(pq))
 	{
 		return (index2);
@@ -282,7 +263,7 @@ static size_t Min(priority_queue_t* pq, size_t index1, size_t index2)
 		return (index1);
 	}
 	
-	if (pq->comparer(*(void**)VectorGetAccessToElem(pq->vector, index1), *(void**)VectorGetAccessToElem(pq->vector, index2), pq->comparer_param) > 0)
+	if (pq->comparer(base[index1], base[index2], pq->comparer_param) > 0)
 	{
 		return (index2);
 	}
@@ -295,103 +276,118 @@ static void HeapifyUp(priority_queue_t* pq, size_t curr_elem_index)
 	size_t parent_index = 0;
 	void* curr = NULL;
 	void* parent = NULL;
+	void** base = NULL;
 
 	assert(NULL != pq);
 
-	parent_index = GetParent(pq, curr_elem_index);
-	if (PQSize(pq) == parent_index)
+	if (curr_elem_index == FIRST_ELEM_INDEX)
 	{
 		return;
 	}
 		
-	curr = *(void**)VectorGetAccessToElem(pq->vector, curr_elem_index);
-	parent = *(void**)VectorGetAccessToElem(pq->vector, parent_index);
+	parent_index = GetParent(curr_elem_index);
+	base = GetBase(pq);
+	
+	curr = base[curr_elem_index];
+	parent = base[parent_index];
 
 	while (pq->comparer(curr, parent, pq->comparer_param) < 0)
 	{
 		Swap(pq, curr_elem_index, parent_index);
 		
-		curr_elem_index = parent_index;
-		
-		parent_index = GetParent(pq, curr_elem_index);
-		
-		if (PQSize(pq) == parent_index)
+		curr_elem_index = parent_index;		
+		if (curr_elem_index == FIRST_ELEM_INDEX)
 		{
 			return;
 		}
 
-		curr = *(void**)VectorGetAccessToElem(pq->vector, curr_elem_index);
-		parent = *(void**)VectorGetAccessToElem(pq->vector, parent_index);
+		parent_index = GetParent(curr_elem_index);
+
+		curr = base[curr_elem_index];
+		parent = base[parent_index];
 	}
 }
 
 static void HeapifyDown(priority_queue_t* pq, size_t curr_elem_index)
 {
-	void* curr_elem = NULL;
-	void* min_child = NULL;
+	void** base = NULL;
 	size_t left_child_index = 0;
 	size_t right_child_index = 0;
 	size_t min_child_index = 0;
 	
 	assert(NULL != pq);
-
-	curr_elem = *(void**)VectorGetAccessToElem(pq->vector, curr_elem_index);
 	
-	left_child_index = GetLeftChild(pq, curr_elem_index);
-	if (PQSize(pq) == left_child_index)
+	base = GetBase(pq);
+	
+	UpdateChildren(curr_elem_index, &left_child_index, &right_child_index);
+	if (left_child_index >= PQSize(pq) || right_child_index >= PQSize(pq))
 	{
 		return;
 	}
 	
-	right_child_index = GetRightChild(pq, curr_elem_index);
 	min_child_index = Min(pq, left_child_index, right_child_index);
-	min_child = *(void**)VectorGetAccessToElem(pq->vector, min_child_index);
 	
 	/* while curr_elem is samller than the biggest child */
-	while (pq->comparer(curr_elem, min_child, pq->comparer_param) > 0)
+	while (pq->comparer(base[curr_elem_index], base[min_child_index], pq->comparer_param) > 0)
 	{
 		/* swap with the largest child */
 		Swap(pq, curr_elem_index, min_child_index);
 		curr_elem_index = min_child_index;
 		
-		left_child_index = GetLeftChild(pq, curr_elem_index);
-		if (PQSize(pq) == left_child_index)
+		/* update children of the new curr */
+		UpdateChildren(curr_elem_index, &left_child_index, &right_child_index);
+		if (left_child_index >= PQSize(pq) || right_child_index >= PQSize(pq))
 		{
 			return;
 		}
 		
-		right_child_index = GetRightChild(pq, curr_elem_index);
 		min_child_index = Min(pq, left_child_index, right_child_index);		
 	}
 }
 
+static void UpdateChildren(size_t curr, size_t* left_child, size_t* right_child)
+{
+	assert(NULL != left_child);
+	assert(NULL != right_child);
+	
+	*left_child = GetLeftChild(curr);
+	*right_child = GetRightChild(curr);
+}
+
 static void Swap(priority_queue_t* pq, size_t index1, size_t index2)
 {
-	void** elem1 = (void**)VectorGetAccessToElem(pq->vector, index1);
-	void** elem2 = (void**)VectorGetAccessToElem(pq->vector, index2);
+	void** base = NULL;
+	void* temp = NULL;
 	
-	void* temp = *elem1;
-	*elem1 = *elem2;
-	*elem2 = temp;
+	assert(NULL != pq);
+
+	base = GetBase(pq);
+
+	temp = base[index1];
+	base[index1] = base[index2];
+	base[index2] = temp;	
 }
 
 static size_t FindElemIndexInVector(const priority_queue_t* pq, pq_is_match_t is_match, void* data)
 {
 	size_t index = FIRST_ELEM_INDEX;
 	void* curr_elem = NULL;
-	
+	void** base = NULL;
+		
 	/* assert */
 	assert(NULL != pq);
 	assert(NULL != is_match);
 	assert(NULL != data);
-
-	curr_elem = *(void**)VectorGetAccessToElem(pq->vector, FIRST_ELEM_INDEX);
+	
+	base = GetBase(pq);
+	
+	curr_elem = base[FIRST_ELEM_INDEX];
 	
 	/* iterate on the vector until find the data or until the end */	
 	while (index < PQSize(pq) - 1 && !is_match(curr_elem, data))
 	{
 		++index;
-		curr_elem = *(void**)VectorGetAccessToElem(pq->vector, index);		
+		curr_elem = base[index];		
 	}
 	
 	/* if data not found */
@@ -410,7 +406,16 @@ static size_t GetLastElemIndex(const priority_queue_t* pq)
 	return (VectorSize(pq->vector) - 1);
 }
 
+static void** GetBase(const priority_queue_t* pq)
+{
+	assert(NULL != pq);
+	
+	return ((void**)VectorGetAccessToElem(pq->vector, FIRST_ELEM_INDEX));
+}
+
 /************************************Print Functions************************************/
+#ifndef NDEBUG
+
 #include <stdio.h> /* printf */
 #define INDENT_STEP (5)
 
@@ -438,3 +443,5 @@ void PQPrintTree(priority_queue_t* pq)
 	printf( "\nPriority Queue Tree (rotated):\n" );
 	PrintTreeRec(pq, 0, 0);
 }
+
+#endif

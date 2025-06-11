@@ -573,13 +573,9 @@ static void HeapifyDown(int* arr, size_t curr, size_t size)
 		
 	/* find the largest child */
 	largest_child = Max(arr, size, left_child, right_child);
-	if (0 == largest_child)
-	{
-		return;
-	}
 	
 	/* while current is samller than the largest child */
-	while (arr[curr] < arr[largest_child])
+	while (0 != largest_child && arr[curr] < arr[largest_child])
 	{
 		/* swap the current with largest child */
 		SwapInts(&arr[curr], &arr[largest_child]);
@@ -591,10 +587,6 @@ static void HeapifyDown(int* arr, size_t curr, size_t size)
 
 		/* find the largest child of the new current */
 		largest_child = Max(arr, size, left_child, right_child);
-		if (0 == largest_child)
-		{
-			return;
-		}
 	}
 }
 
