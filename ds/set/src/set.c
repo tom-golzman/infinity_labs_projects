@@ -6,11 +6,11 @@
 
 /************************************includes************************************/
 #include <assert.h> /* assert() */
-#include <stdlib.h> /* malloc(), free() */
+#include <stdlib.h> /* calloc(), free() */
 
 #include "dll.h"	/* dll_t, iter_t */
 
-#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
+#include "utils.h"	/* SUCCESS, FAIL, DEBUG_ONLY(), BAD_MEM() */
 #include "set.h"
 
 /************************************typedef************************************/
@@ -26,10 +26,10 @@ struct set {
 typedef struct {
 	iter_t iter;
 	int was_found;
-} set_find_iter_result_t;
+} find_iter_result_t;
 
 /************************************Private Functions************************************/
-static set_find_iter_result_t SetFindKeyInBucket(const set_t* set, const void* key);
+static find_iter_result_t SetFindKeyInBucket(const set_t* set, const void* key);
 
 /************************************Functions************************************/
 set_t* SetCreate(size_t capacity, set_is_same_key_t is_same_key, const void* is_same_param, hash_func_t hash_func, const void* hash_func_param)
@@ -46,7 +46,7 @@ set_t* SetCreate(size_t capacity, set_is_same_key_t is_same_key, const void* is_
 	assert(NULL != hash_func);
 	
 	/* allocate memory for the set and the table*/
-	set = (set_t*)malloc(sizeof(set_t));
+	set = (set_t*)calloc(1, sizeof(set_t));
 	if (NULL == set)
 	{
 		return (NULL);
@@ -136,6 +136,7 @@ int SetInsert(set_t* set, void* key)
 	
 	/* assert */
 	assert(NULL != set);
+	assert(NULL == SetFind(set, key));
 	
 	/* calculate the hash value of the key */
 	index = set->hash_func(key, set->hash_func_param) % set->capacity;
@@ -154,7 +155,7 @@ int SetInsert(set_t* set, void* key)
 
 void* SetRemove(set_t* set, const void* key)
 {
-	set_find_iter_result_t find_result;
+	find_iter_result_t find_result;
 	void* data = NULL;
 		
 	/* assert */
@@ -202,7 +203,7 @@ size_t SetSize(const set_t* set)
 
 void* SetFind(set_t* set, const void* key)
 {
-	set_find_iter_result_t find_result;
+	find_iter_result_t find_result;
 		
 	/* assert */
 	assert(NULL != set);
@@ -253,11 +254,11 @@ int SetForEach(set_t* set, set_action_func_t action_func , void* param)
 }
 
 /************************************Private Functions************************************/
-static set_find_iter_result_t SetFindKeyInBucket(const set_t* set, const void* key)
+static find_iter_result_t SetFindKeyInBucket(const set_t* set, const void* key)
 {
 	size_t index = 0;
 	dll_t* bucket = NULL;
-	set_find_iter_result_t result;
+	find_iter_result_t result;
 	
 	assert(NULL != set);
 	

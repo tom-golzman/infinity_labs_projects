@@ -62,7 +62,7 @@ void TestInsertAndSizeAndRemove()
 	test_struct_t s1 = {1, 10};
 	test_struct_t s2 = {2, 20};
 	test_struct_t s3 = {3, 30};
-	test_struct_t s4 = {1, 40};
+	test_struct_t s4 = {4, 40};
 	int insert_status = SUCCESS;
 	
 	printf(BOLD_TITLE "\nTest: Insert() & Size() & Remove()\n" RESET);
