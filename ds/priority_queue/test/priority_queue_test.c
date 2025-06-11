@@ -73,17 +73,29 @@ void TestPQEnqueuePeek()
     printf(BOLD_TITLE "\nTest: PQEnqueue() + PQPeek()\n" RESET);
 
 	PQEnqueue(pq, &a);
+#ifndef NDEBUG
 PQPrintTree(pq);
+#endif
 	PQEnqueue(pq, &b);
+#ifndef NDEBUG
 PQPrintTree(pq);
+#endif
 	PQEnqueue(pq, &c);
+#ifndef NDEBUG
 PQPrintTree(pq);
+#endif
 	PQEnqueue(pq, &d);
+#ifndef NDEBUG
 PQPrintTree(pq);
+#endif
 	PQEnqueue(pq, &e);
+#ifndef NDEBUG
 PQPrintTree(pq);
+#endif
 	PQEnqueue(pq, &f);
-PQPrintTree(pq);	
+#ifndef NDEBUG
+PQPrintTree(pq);
+#endif
 
     if (*(int*)PQPeek(pq) == 5)
     {
@@ -127,10 +139,13 @@ void TestPQDequeue()
 	PQEnqueue(pq, &a);
 	PQEnqueue(pq, &b);
 	PQEnqueue(pq, &c);
-	PQPrintTree(pq);
+#ifndef NDEBUG
+PQPrintTree(pq);
+#endif
 	PQDequeue(pq);
-	
-	PQPrintTree(pq);
+#ifndef NDEBUG
+PQPrintTree(pq);
+#endif
 
 	if (*(int*)PQPeek(pq) == 20)
 	{
