@@ -23,10 +23,8 @@ static void QuickSortHelper(char* base, size_t low, size_t high, size_t elem_siz
 static size_t Partition(char* base, size_t low, size_t high, size_t elem_size, int (*compar)(const void*, const void*));
 static void Swap(void* x, void* y, size_t elem_size);
 static void BuildMaxHeap(int* arr, size_t size);
-static void HeapifyUp(int* arr, size_t index);
 static void HeapifyDown(int* arr, size_t index, size_t size);
 static size_t Max(int* arr, size_t size, size_t index1, size_t index2);
-static size_t GetParentIdx(size_t current);
 static size_t GetLeftChildIdx(size_t parent);
 static size_t GetRightChildIdx(size_t parent);
 
@@ -540,25 +538,34 @@ static void BuildMaxHeap(int* arr, size_t size)
 	}
 }
 
+/*
 static void HeapifyUp(int* arr, size_t curr)
 {
 	size_t parent = GetParentIdx(curr);
 	
-	/* asssert */
 	assert(NULL != arr);
 	assert(curr > 0);
 	
-	/* while current is before parent */
+	//while current is before parent
 	while (curr > 1 && arr[curr] > arr[parent])
 	{
-		/* swap current and parent*/
+		// swap current and parent
 		SwapInts(&arr[curr], &arr[parent]);
 		
-		/* update current and parent index */
+		// update current and parent index
 		curr = parent;
 		parent = GetParentIdx(curr);
 	}
 }
+
+static size_t GetParentIdx(size_t current)
+{
+	assert(current > 0);
+	
+	return (current / 2);
+}
+
+*/
 
 static void HeapifyDown(int* arr, size_t curr, size_t size)
 {
@@ -588,13 +595,6 @@ static void HeapifyDown(int* arr, size_t curr, size_t size)
 		/* find the largest child of the new current */
 		largest_child = Max(arr, size, left_child, right_child);
 	}
-}
-
-static size_t GetParentIdx(size_t current)
-{
-	assert(current > 0);
-	
-	return (current / 2);
 }
 
 static size_t GetLeftChildIdx(size_t parent)

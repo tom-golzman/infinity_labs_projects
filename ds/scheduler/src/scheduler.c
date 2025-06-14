@@ -5,15 +5,18 @@
 **/
 
 /************************************includes************************************/
+#define _POSIX_C_SOURCE 200112L /* for sleep() warning */
+#include <unistd.h>			/* sleep( */
+
 #include "priority_queue.h" /* pq functions */
 #include "task.h" 			/* task_t */
 #include "scheduler.h"
 
 /************************************define************************************/
-#define TRUE (1)
-#define FALSE (0)
+#define TRUE 	(1)
+#define FALSE 	(0)
 #define SUCCESS (0)
-#define FAIL (1)
+#define FAIL 	(1)
 
 /************************************typedef************************************/
 typedef enum {

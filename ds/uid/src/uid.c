@@ -5,8 +5,10 @@
 **/
 
 /************************************includes************************************/
-#include <unistd.h> 	/* gethostname */
-#include <netdb.h> 		/* gethostbyname */
+#define _POSIX_C_SOURCE 200112L /* for gethostname() warning */
+#include <unistd.h> 	/* gethostname() */
+
+#include <netdb.h> 		/* gethostbyname() */
 #include <netinet/in.h> /* struct in_addr */
 
 #include "uid.h"
