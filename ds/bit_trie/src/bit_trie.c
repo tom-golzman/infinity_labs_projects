@@ -33,6 +33,7 @@ static int IsFull(btrie_node_t* node);
 static unsigned long GetBit(unsigned long value, size_t num_bits, size_t level);
 static unsigned long ResetValue(unsigned long value, size_t num_bits, size_t level);
 static void FreeHelper(btrie_node_t** node, size_t num_bits, size_t level, unsigned long value);
+static size_t CountUsedLeaves(const btrie_node_t* node, size_t num_bits, size_t level);
 
 /************************************Functions************************************/
 bit_trie_t* BitTrieCreate(size_t num_bits)
@@ -105,6 +106,19 @@ void BTrieFree(bit_trie_t* trie, unsigned long value)
 	
 	/* call the recursive function */
 	FreeHelper(&(root), trie->num_bits, 0, value);
+}
+
+size_t BTrieCountFree(const bit_trie_t* trie)
+{
+	size_t total_possible_leaves = 0;
+	size_t used_leaves = 0;
+
+	assert(NULL != trie);
+	
+	total_possible_leaves = 1UL << trie->num_bits;
+	used_leaves = CountUsedLeaves(&(trie->root), trie->num_bits, 0);
+	
+	return total_possible_leaves - used_leaves;
 }
 
 /************************************Private Functions************************************/
@@ -241,4 +255,29 @@ static void FreeHelper(btrie_node_t** node, size_t num_bits, size_t level, unsig
 	
 	/* update the field is_full */
 	(*node)->is_full = IsFull((*node)->children[LEFT]) && IsFull((*node)->children[RIGHT]);
+}
+
+static size_t CountUsedLeaves(const btrie_node_t* node, size_t num_bits, size_t level)
+{
+	/* if there isn't a subtree */
+	if (NULL == node)
+	{
+		return 0;
+	}
+	
+	/* if its a used leaf (marked with BAD_MEM) */
+	if (BAD_MEM(btrie_node_t*) == node)
+	{
+		return 1;
+	}
+	
+	/* if reached an unused leaf */
+	if (level == num_bits)
+	{
+		return 0;
+	}
+	
+	/* call the recursive function with the children */
+	return CountUsedLeaves(node->children[LEFT], num_bits, level + 1) + 
+			CountUsedLeaves(node->children[RIGHT], num_bits, level + 1);
 }

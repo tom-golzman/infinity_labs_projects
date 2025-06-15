@@ -18,6 +18,7 @@ int main(void)
 	TestCreateAndDestroy();
 	TestGet();
 	TestFree();
+	TestCountFree();
 	
 	printf("\n");
 	
@@ -118,6 +119,71 @@ void TestFree()
 	else
 	{
 		printf(RED "TEST 1 FAILED: " RESET "Expected 2 again, got %lu\n", a1);
+	}
+
+	BTrieDestroy(trie);
+}
+
+void TestCountFree()
+{
+	bit_trie_t* trie = BitTrieCreate(3);
+	size_t count = 0;
+	unsigned long i, a1, a2, a3;
+
+	printf(BOLD_TITLE "\nTest: BTrieCountFree()\n" RESET);
+
+	count = BTrieCountFree(trie);
+	if (count == 8)
+	{
+		printf(GREEN "TEST 1 PASSED\n" RESET);
+	}
+	else
+	{
+		printf(RED "TEST 1 FAILED: " RESET "Expected 8, got %lu\n", count);
+	}
+
+	a1 = BTrieGet(trie, 1); /* 001 */
+	a2 = BTrieGet(trie, 7); /* 111 */
+	(void)a1;
+	(void)a2;
+	(void)a3;
+	
+	count = BTrieCountFree(trie);
+	if (count == 6)
+	{
+		printf(GREEN "TEST 2 PASSED\n" RESET);
+	}
+	else
+	{
+		printf(RED "TEST 2 FAILED: " RESET "Expected 6, got %lu\n", count);
+	}
+
+	BTrieFree(trie, 1); /* free 001 */
+
+	count = BTrieCountFree(trie);
+	if (count == 7)
+	{
+		printf(GREEN "TEST 3 PASSED\n" RESET);
+	}
+	else
+	{
+		printf(RED "TEST 3 FAILED: " RESET "Expected 7, got %lu\n", count);
+	}
+
+	/* fill the rest */
+	for (i = 0; i < 8; ++i)
+	{
+		BTrieGet(trie, i);
+	}
+
+	count = BTrieCountFree(trie);
+	if (count == 0)
+	{
+		printf(GREEN "TEST 4 PASSED\n" RESET);
+	}
+	else
+	{
+		printf(RED "TEST 4 FAILED: " RESET "Expected 0, got %lu\n", count);
 	}
 
 	BTrieDestroy(trie);
