@@ -154,7 +154,7 @@ static unsigned long GetHelper(btrie_node_t** node, size_t num_bits, size_t leve
 		
 	assert(NULL != node);
 	
-	/* if reached the bottom of the tree */
+	/* if reached the bottom of the tree (leaf) */
 	if (level == num_bits)
 	{
 		/* if the leaf is uded */
@@ -169,7 +169,7 @@ static unsigned long GetHelper(btrie_node_t** node, size_t num_bits, size_t leve
 		return trie_value;
 	}
 	
-	/* if the leaf isn't at tree's level*/
+	/* if the leaf isn't at tree's level - create a node*/
 	if (NULL == *node)
 	{
 		/* create a new node */
@@ -180,40 +180,32 @@ static unsigned long GetHelper(btrie_node_t** node, size_t num_bits, size_t leve
 		}
 	}
 
-	if (IsFull(*node))
-	{
-		return 0;
-	}
-	
+	/* try the requested value */
 	bit = GetBit(trie_value, num_bits ,level);
 	
-	/* recursive call with the child */
+	/* recursive call with the requested value */
 	result = GetHelper(&(*node)->child[bit], num_bits, level + 1, trie_value);
 	
-	/* if wasnt found an avaliable value on left */
+	/* if requested was LEFT and isn't available - try RIGHT */
 	if (LEFT == bit && 0 == result)
 	{
 		/* reset the number and check the right side */
 		trie_value = ResetValue(trie_value, num_bits, level);
 		
-		result = GetHelper(&(*node)->child[RIGHT], num_bits, level, trie_value);
+		result = GetHelper(&(*node)->child[RIGHT], num_bits, level + 1, trie_value);
 	}
 
 	/* mark node full if both children are full */
 	(*node)->is_full = (IsFull((*node)->child[LEFT])) && (IsFull((*node)->child[RIGHT]));
 	
-	/* if all the subtree is full - return 0, else return the result */
-	if (IsFull(*node))
-	{
-		return 0;
-	}
+
 	
 	return result;
 }
 
 static int IsFull(btrie_node_t* node)
 {
-	return BAD_MEM(btrie_node_t*) == node || NULL != node && node->is_full;
+	return BAD_MEM(btrie_node_t*) == node || (NULL != node && node->is_full);
 }
 
 static unsigned long GetBit(unsigned long trie_value, size_t num_bits, size_t level)
@@ -224,12 +216,13 @@ static unsigned long GetBit(unsigned long trie_value, size_t num_bits, size_t le
 static unsigned long ResetValue(unsigned long value, size_t num_bits, size_t level)
 {
 	size_t bit_idx = num_bits - level - 1;
+	unsigned long mask = 1;
 	
 	/* reset all the bits after bit_idx */
-	value &= ~((1 << (bit_idx + 1)) - 1);
+	value &= ~(mask << bit_idx);
 	
 	/* switch the bit_idx to 1 */
-	value |= (1 << bit_idx);
+	value |= (mask << bit_idx);
 	
 	return value;
 }
