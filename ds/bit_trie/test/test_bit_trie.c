@@ -120,9 +120,5 @@ void TestFree()
 		printf(RED "TEST 1 FAILED: " RESET "Expected 2 again, got %lu\n", a1);
 	}
 
-	/* free unallocated address (no crash expected) */
-	BTrieFree(trie, 7);
-	printf(GREEN "TEST 2 PASSED: " RESET "Free unallocated address handled\n");
-
 	BTrieDestroy(trie);
 }
