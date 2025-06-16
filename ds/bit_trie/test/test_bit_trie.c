@@ -1,10 +1,8 @@
 /************************************includes************************************/
-#include <stdio.h> /* printf */
+#include <stdio.h> 		/* printf */
 
 #include "test_utils.h" /* colors, titles, status, boolean */
 #include "bit_trie.h"
-
-/************************************define************************************/
 
 /************************************Functions Forward Decleration************************************/
 void TestCreateAndDestroy();
