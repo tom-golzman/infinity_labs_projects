@@ -16,6 +16,7 @@
 enum { NUM_MOVES = 8 };
 
 /************************************typedef************************************/
+typedef bit_array_t board_t;
 
 typedef struct position {
 	int x;

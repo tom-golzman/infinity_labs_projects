@@ -9,6 +9,7 @@
 #include <stdlib.h>		/* calloc(), free() */
 
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
+
 #include "bit_trie.h"	/* bit trie functions */
 #include "dhcp.h"
 
