@@ -16,6 +16,7 @@
 enum { NUM_MOVES = 8 };
 
 /************************************typedef************************************/
+typedef bit_array_t board_t;
 
 typedef struct position {
 	int x;
@@ -47,8 +48,6 @@ int IsKnightTourPathFound(int x, int y)
 	/* intialize position with given x and y */
 	position.x = x;
 	position.y = y;
-	
-	/* ?? mark start position as visited ?? */
 	
 	/* call the recursive function */
 	return KnightTourStep(board, position);
@@ -105,7 +104,7 @@ static int KnightTourStep(board_t board, position_t position)
 	}
 	
 	/* return false */
-	return FALSE; 
+	return FALSE;
 }
 
 static size_t PositionToIndex(position_t position)
@@ -150,4 +149,3 @@ static int IsVisitedPosition(board_t board, position_t position)
 	
 	return FALSE;
 }
-
