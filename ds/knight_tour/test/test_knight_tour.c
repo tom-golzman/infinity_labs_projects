@@ -4,8 +4,6 @@
 #include "test_utils.h" /* colors, titles, status, boolean */
 #include "knight_tour.h"
 
-/************************************define************************************/
-
 /************************************Functions Forward Decleration************************************/
 void TestKnightTour();
 
@@ -22,40 +20,32 @@ int main(void)
 /************************************Functions************************************/
 void TestKnightTour()
 {
-	int result = 0;
+	int x = 0, y = 0;
+	int failed_count = 0;
+	int result = FALSE;
 
-	printf(BOLD_TITLE "\nTest: IsKnightTourPathFound()\n" RESET);
+	printf(BOLD_TITLE "\nTest: IsKnightTourPathFound() - Full 8x8 Board\n" RESET);
 
-	/* TEST 1: left up edge (0,0) */
-	result = IsKnightTourPathFound(0, 0);
-	if (TRUE == result)
+	for (x = 0; x < BOARD_SIZE; ++x)
 	{
-		printf(GREEN "TEST 1 PASSED\n" RESET);
+		for (y = 0; y < BOARD_SIZE; ++y)
+		{
+			result = IsKnightTourPathFound(x, y);
+
+			if (result != TRUE)
+			{
+				printf(RED "FAILED at position (%d, %d)\n" RESET, x, y);
+				++failed_count;
+			}
+		}
+	}
+
+	if (0 == failed_count)
+	{
+		printf(GREEN "ALL TESTS PASSED: Knight’s Tour is possible from every square.\n" RESET);
 	}
 	else
 	{
-		printf(RED "TEST 1 FAILED: " RESET "Expected TRUE at (0,0)\n");
-	}
-
-	/* TEST 2: board center (3,3) */
-	result = IsKnightTourPathFound(3, 3);
-	if (TRUE == result)
-	{
-		printf(GREEN "TEST 2 PASSED\n" RESET);
-	}
-	else
-	{
-		printf(RED "TEST 2 FAILED: " RESET "Expected TRUE at (3,3)\n");
-	}
-
-	/* TEST 3: right down edge (7,7) */
-	result = IsKnightTourPathFound(7, 7);
-	if (TRUE == result)
-	{
-		printf(GREEN "TEST 3 PASSED\n" RESET);
-	}
-	else
-	{
-		printf(RED "TEST 3 FAILED: " RESET "Expected TRUE at (7,7)\n");
+		printf(RED "TEST FAILED: %d positions failed.\n" RESET, failed_count);
 	}
 }

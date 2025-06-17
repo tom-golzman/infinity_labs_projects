@@ -150,4 +150,3 @@ static int IsVisitedPosition(board_t board, position_t position)
 	
 	return FALSE;
 }
-
