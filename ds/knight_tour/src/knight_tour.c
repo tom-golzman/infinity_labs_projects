@@ -105,7 +105,7 @@ static int KnightTourStep(board_t board, position_t position)
 	}
 	
 	/* return false */
-	return FALSE; 
+	return FALSE;
 }
 
 static size_t PositionToIndex(position_t position)
@@ -150,3 +150,4 @@ static int IsVisitedPosition(board_t board, position_t position)
 	
 	return FALSE;
 }
+
