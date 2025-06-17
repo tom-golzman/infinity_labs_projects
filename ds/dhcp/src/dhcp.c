@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
 	Date: 15/06/2025
-	Reviewed By: 
+	Reviewed By: Amir Granot
 **/
 
 /************************************includes************************************/
@@ -54,7 +54,7 @@ dhcp_t* DHCPCreate(unsigned long network_address, unsigned long subnet_mask)
 	}
 	
 	/* initialize struct fields */
-	dhcp->network_address = network_address;
+	dhcp->network_address = network_address & subnet_mask;
 	dhcp->subnet_mask = subnet_mask;
 	
 	/* calculate broadcast address (host bits are 1) and server address (biggest address before broadcast) */
