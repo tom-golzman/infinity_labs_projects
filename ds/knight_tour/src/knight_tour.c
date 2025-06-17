@@ -8,26 +8,47 @@
 #include <assert.h> /* assert() */
 
 #include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
+
 #include "bit_array.h"
 #include "knight_tour.h"
 
 /************************************define************************************/
+enum { NUM_MOVES = 8 };
 
 /************************************typedef************************************/
-typedef bit_array_t board_t;
+
+typedef struct position {
+	int x;
+	int y;
+} position_t;
+
+/**************************Private Functions Decleration**************************/
+static int KnigtTourStep(board_t board, position_t position);
+static int PositionToIndex(position_t position);
+static int IsOutOfBorad(position_t position);
+static position_t GetNextMove(position_t curr_position, int direction);
+static int IsVisited(board_t board, position_t position);
 
 /************************************Functions************************************/
 int IsKnightTourPathFound(int x, int y)
 {
+	board_t board;
+	
 	/* assert */
+	assert(x >= 0);
+	assert(x < BORAD_SIZE);
+	assert(y >= 0);
+	assert(y < BORAD_SIZE);
 	
 	/* create borad */
-	/* mark start position as visited */
+	
+	/* ?? mark start position as visited ?? */
 	
 	/* call the recursive function */
 }
 
-static int KnigtTourStep(board_t board, int x, int y)
+/********************************Private Functions********************************/
+static int KnigtTourStep(board_t board, position_t position)
 {
 	/* assert */
 	
@@ -42,8 +63,25 @@ static int KnigtTourStep(board_t board, int x, int y)
 		/* return success */
 		
 
-	/* for loop 8 times */
-		/* call the recursive function with different possible knight's moves */
-	
-	/* return the returned status of the recursive calls */ 
+	/* foreach direction (8 directions) */
+		/* calculate next position from current position */
+		/* call the recursive function with next position */
+		/* if returned success */
+			/* return success */
+			
+	/* return failure */ 
 }
+
+static int PositionToIndex(position_t position)
+{
+	
+}
+
+static int IsOutOfBorad(position_t position)
+{}
+
+static position_t GetNextMove(position_t curr_position, int direction)
+{}
+
+static int IsVisited(board_t board, position_t position)
+{}
