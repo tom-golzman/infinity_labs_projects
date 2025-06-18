@@ -1,21 +1,21 @@
 /**
 	Written By: Tom Golzman
 	Date: 17/06/2025
-	Reviewed By: 
+	Reviewed By: Amir Granot
 **/
 
 /************************************includes************************************/
 #include <assert.h> 	/* assert() */
 #include <time.h>		/* clock_t, clock(), CLOCKS_PER_SEC */
-#include <stdlib.h>		/* qsort */
 
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
 
 #include "bit_array.h"	/* bit_array_t , bit_array functions*/
+#include "sorts.h"		/* QuickSort() */
 #include "knight_tour.h"
 
 /************************************define************************************/
-enum { NUM_MOVES = 8 };
+enum { NUM_DIRECTIONS = 8 };
 
 #define TIMEOUT_SECONDS 300
 
@@ -40,8 +40,10 @@ static position_t GetNextPosition(position_t curr_position, int direction);
 static int IsVisitedPosition(board_t board, position_t position);
 static board_t SetVisited(board_t board, size_t position_idx);
 static int IsBoardFull(board_t board);
-static int CountNextMoves(board_t board, position_t position);
+static int CountMoveOptions(board_t board, position_t curr_pos, move_option_t* options_out);
+static int CountValidMoves(board_t board, position_t position);
 static int CompareMoves(const void *a, const void *b);
+static int IsTimeoutReached(clock_t start_time);
 
 /************************************Functions************************************/
 int IsKnightTourPathFound(int x, int y)
@@ -73,14 +75,13 @@ static int KnightTourStep(board_t board, position_t position, clock_t start_time
 {
 	position_t next_position = {-1,-1};
 	size_t position_idx = 0;
-	int num_valid_moves = 0;	
+	int num_move_options = 0;	
 	int is_path_found = FALSE;
 	int i = 0;
-	move_option_t options[NUM_MOVES];
-	clock_t curr_time = clock();
-
+	move_option_t move_options[NUM_DIRECTIONS];
+	
 	/* timeout check */
-	if ((double)(curr_time - start_time) / CLOCKS_PER_SEC > TIMEOUT_SECONDS)
+	if (IsTimeoutReached(start_time))
 	{
 		return FALSE;
 	}
@@ -103,26 +104,17 @@ static int KnightTourStep(board_t board, position_t position, clock_t start_time
 		return TRUE;
 	}	
 
-	/* fill move options with next moves count */
-	for (i = 0; i < NUM_MOVES; ++i)
-	{
-		next_position = GetNextPosition(position, i);
-		if (!IsOutOfBoard(next_position) && !IsVisitedPosition(board, next_position))
-		{
-			options[num_valid_moves].position = next_position;
-			options[num_valid_moves].next_moves = CountNextMoves(board, next_position);
-			++num_valid_moves;
-		}
-	}
+	/* count move options */
+	num_move_options = CountMoveOptions(board, position, move_options);
 	
 	/* sort options by Warnsdorff's rule */
-	qsort(options, num_valid_moves, sizeof(move_option_t), CompareMoves);
+	QuickSort(move_options, num_move_options, sizeof(move_option_t), CompareMoves);
 
-	/* foreach direction (8 directions) */
-	for (i = 0; i < num_valid_moves; ++i)
+	/* for each valid moves */
+	for (i = 0; i < num_move_options; ++i)
 	{
 		/* call the recursive function with next position */
-		next_position = options[i].position;
+		next_position = move_options[i].position;
 		is_path_found = KnightTourStep(board, next_position, start_time);
 		if (FALSE != is_path_found)
 		{
@@ -135,13 +127,44 @@ static int KnightTourStep(board_t board, position_t position, clock_t start_time
 	return FALSE;
 }
 
-static int CountNextMoves(board_t board, position_t position)
+static int CountMoveOptions(board_t board, position_t curr_pos, move_option_t *options_out)
+{
+	position_t next_pos = {-1, -1};
+	int i = 0;
+	int num_valid = 0;
+	int valid_moves = 0;
+
+	assert(NULL != options_out);
+	
+	/* for each possible directions */
+	for (i = 0; i < NUM_DIRECTIONS; ++i)
+	{
+		/* get next position and check if its valid */
+		next_pos = GetNextPosition(curr_pos, i);
+		if (!IsOutOfBoard(next_pos) && !IsVisitedPosition(board, next_pos))
+		{
+			/* count valid moves from next position */
+			valid_moves = CountValidMoves(board, next_pos);
+			
+			/* add the next position with its valid moves, to the options array */	
+			options_out[num_valid].position = next_pos;
+			options_out[num_valid].next_moves = valid_moves;
+			++num_valid;
+		}
+	}
+
+	return num_valid;
+}
+
+static int CountValidMoves(board_t board, position_t position)
 {
 	int i = 0, count = 0;
 	position_t next;
 
-	for (i = 0; i < NUM_MOVES; ++i)
+	/* for each possible directions */
+	for (i = 0; i < NUM_DIRECTIONS; ++i)
 	{
+		/* get next position and check if its valid */
 		next = GetNextPosition(position, i);
 		if (!IsOutOfBoard(next) && !IsVisitedPosition(board, next))
 		{
@@ -150,6 +173,13 @@ static int CountNextMoves(board_t board, position_t position)
 	}
 
 	return count;
+}
+
+static int IsTimeoutReached(clock_t start_time)
+{
+	clock_t curr_time = clock();
+	
+	return (((double)(curr_time - start_time) / CLOCKS_PER_SEC) > TIMEOUT_SECONDS) ? TRUE : FALSE;
 }
 
 static int CompareMoves(const void *a, const void *b)
@@ -183,12 +213,12 @@ static position_t GetNextPosition(position_t curr_position, int direction)
 	position_t next_position = {-1,-1};
 	
 	/* intialize moves LUT (static - intialize once, const - can't be modified */
-	static const int moves[NUM_MOVES][2] = { { 1,2} , { 1,-2} , { 2,1} , { 2,-1} ,
+	static const int moves[NUM_DIRECTIONS][2] = { { 1,2} , { 1,-2} , { 2,1} , { 2,-1} ,
 											 {-1,2} , {-1,-2} , {-2,1} , {-2,-1} };
 	
 	/* assert */
 	assert(direction >= 0);
-	assert(direction < NUM_MOVES);
+	assert(direction < NUM_DIRECTIONS);
 	
 	/* initialize next position */
 	next_position.x = curr_position.x + moves[direction][0];
