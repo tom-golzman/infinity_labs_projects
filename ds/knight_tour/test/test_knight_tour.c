@@ -11,7 +11,7 @@ void TestKnightTour();
 int main(void)
 {
 	TestKnightTour();
-		
+	
 	printf("\n");
 	
 	return (0);
