@@ -1,6 +1,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+/************************************Define************************************/
 /* trash memory before free */
 #define BAD_MEM32(T)  	((T)0xDEADBEEF)
 #define BAD_MEM64(T)  	((T)0xBADC0FFEE0DDF00D)
@@ -12,20 +13,24 @@
 #endif
 
 /* debug statements */
-
 #ifdef NDEBUG
   	#define DEBUG_ONLY(statements)
 #else
-  	#define DEBUG_ONLY(statements)  do { \
-		statements \
-} while (0)
+  	#define DEBUG_ONLY(statements) \
+	  	do { \
+			statements \
+		} while (0)
 #endif
 
+/************************************enum************************************/
 /* status */
 enum { SUCCESS = 0, FAIL = 1 };
 
 /* boolean */
 enum { FALSE = 0, TRUE = 1 };
 
-#endif /* __UTILS_H__ */
+/************************************Functions************************************/
+/* systemcalls handling */
+void ExitIfBad(int is_good, int exit_stat, const char* msg);
 
+#endif /* __UTILS_H__ */
