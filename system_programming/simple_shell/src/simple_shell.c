@@ -7,7 +7,7 @@
 /************************************includes************************************/
 #include <assert.h> 	/* assert() */
 #include <stdio.h>		/* printf() */
-#include <string.h>		/* strcspn(), strcmp(), strncpy(), srttok() */
+#include <string.h>		/* strcspn(), strcmp(), strncpy(), strtok() */
 #include <stdlib.h>		/* free() */
 #include <unistd.h>     /* fork(), execvp() */
 #include <sys/types.h>  /* pid_t */
