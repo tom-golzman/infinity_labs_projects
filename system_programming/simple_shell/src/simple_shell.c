@@ -96,13 +96,14 @@ static void ExecCommand(const char* input)
 		
 		/* handle fail */
 		FreeArguments(arguments, num_args);
+		exit(1);
 	}
 		
 	/* if father */
 	else
 	{
 		/* wait for the son */
-		waitpid(pid, &status, 0);
+		waitpid(pid, NULL, 0);
 		
 		/* free the arguments array */
 		FreeArguments(arguments, num_args);
@@ -122,6 +123,7 @@ static int ParseInput(const char* input, char** arguments)
 	
 	/* copy the input to a temp buffer */
 	strncpy(buffer, input, MAX_COMMAND_LEN);
+	
 	/* put null terminator at the end of the buffer */
 	buffer[MAX_COMMAND_LEN - 1] = '\0';
 	
@@ -133,6 +135,7 @@ static int ParseInput(const char* input, char** arguments)
 	{
 		/* duplicate each token and put it in the arguments array */
 		arguments[curr_idx] = StrDup(token);
+		
 		/* handle fail */
 		if (NULL == arguments[curr_idx])
 		{
