@@ -1,17 +1,17 @@
 /**
 	Written By: Tom Golzman
 	Date: 18/06/2025
-	Reviewed By: 
+	Reviewed By: Sami
 **/
 
 /************************************includes************************************/
-#include <assert.h> 	/* assert() */
+#include <assert.h>		/* assert() */
 #include <stdio.h>		/* printf() */
 #include <string.h>		/* strcspn(), strcmp(), strncpy(), strtok() */
 #include <stdlib.h>		/* free() */
-#include <unistd.h>     /* fork(), execvp() */
-#include <sys/types.h>  /* pid_t */
-#include <sys/wait.h>   /* waitpid() */
+#include <unistd.h>		/* fork(), execvp() */
+#include <sys/types.h>	/* pid_t */
+#include <sys/wait.h>	/* waitpid() */
 
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
 
@@ -35,8 +35,6 @@ void RunShell()
 	while (1)
 	{
 		printf("simple shell -> ");
-		/* send immediately the text to stdout */		
-		fflush(stdout);
 		
 		/* get input from the user and handle fail */
 		if (NULL == fgets(input, MAX_COMMAND_LEN, stdin))
@@ -93,14 +91,11 @@ static void ExecCommand(const char* input)
 	/* if son */
 	if (0 == pid)
 	{
-		/* put NULL at the end of the arguments array (for execvp) */
-		arguments[num_args] = NULL;
-		 
 		/* exec the given executable */
 		execvp(arguments[0], arguments);
 		
 		/* handle fail */
-	
+		FreeArguments(arguments, num_args);
 	}
 		
 	/* if father */
