@@ -5,8 +5,10 @@ void ExitIfBad(int is_good, int exit_status, const char* message)
 {
 	if(!is_good)
 	{
-		fputs(stderr, message);
+		/* print message to std error */
+		fputs(message, stderr);
 		
+		/* exit from the function with exit status */
 		_exit(exit_status);
 	}
 }
