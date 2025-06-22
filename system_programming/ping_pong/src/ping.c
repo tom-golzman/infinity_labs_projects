@@ -23,6 +23,8 @@ static volatile sig_atomic_t got_sigusr2 = FALSE;
 
 static pid_t child_pid = 0;
 
+static int rounds_counter = 0;
+
 /********************************Private Functions********************************/
 static void ParentHandler(int sig);
 
@@ -37,9 +39,7 @@ int main()
 	sa.sa_handler = ParentHandler;
 
 	/* determine signal action */
-	sigaction(SIGUSR2, &sa, NULL);
-	
-	printf("Ping (parent) pid: %d\n", getpid());
+	ExitIfBad(0 == sigaction(SIGUSR2, &sa, NULL), FAIL, "sigaction() failed!\n");
 	
 	/* create child process */
 	child_pid = fork();
@@ -53,32 +53,38 @@ int main()
 		execl("./pong", "pong", NULL);
 		
 		/* handle failure */
-		perror("execl FAILED!");
-		exit(FAIL);
+		ExitIfBad(child_pid == 0, FAIL, "execl() FAILED!");
 	}
-
-	printf("Forked child_pid: %d\n", child_pid);
-
-	sleep(1);
-	/* parent process */
-	printf("Parent: sending SIGUSR1 to child (pid=%d)\n", child_pid);
-	kill(child_pid, SIGUSR1);
-
-	while (1)
+	
+	/* wait for a signal from the child */
+	while (!got_sigusr2)
 	{
-		if (got_sigusr2)
-		{
-			printf("Parent: received SIGUSR2 from child\n");
-			got_sigusr2 = FALSE;
+		pause();
+	}
+	
+	got_sigusr2 = FALSE;
+	printf("Parent: received first signal from the child\n");
 
-			sleep(1);
-			
-			/* send signal SIGUSR1 to the child */
-			printf("Parent: sending SIGUSR1 to child\n");
-			kill(child_pid, SIGUSR1);
+	while (rounds_counter < NUM_ROUNDS)
+	{
+		/* send signal to the child process */
+		printf("Parent: sending SIGUSR1 to child\n");		
+		kill(child_pid, SIGUSR1);
+
+		/* wait for a signal from the child */
+		while (!got_sigusr2)
+		{
+			pause();
 		}
+			
+		printf("Parent: received SIGUSR2 from child\n");
+		got_sigusr2 = FALSE;
+
+		++rounds_counter;
 	}
 
+	DEBUG_ONLY(printf("Parent: done after %d rounds\n", rounds_counter););
+		
 	return SUCCESS;
 }
 

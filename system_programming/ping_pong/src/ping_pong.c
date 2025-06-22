@@ -78,7 +78,7 @@ static void RunChild(void)
 	sa.sa_handler = ChildHandler;
 
 	/* determine signals action */
-	sigaction(SIGUSR1, &sa, NULL);
+	ExitIfBad(0 == sigaction(SIGUSR1, &sa, NULL), FAIL, "sigaction() failed!\n");
 
 	/* while the child process is running, pause until it gets signal */
 	while (child_running)

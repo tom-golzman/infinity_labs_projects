@@ -38,26 +38,25 @@ int main()
 	sa.sa_handler = ChildHandler;
 
 	/* determine signal action */
-	sigaction(SIGUSR2, &sa, NULL);
+	ExitIfBad(0 == sigaction(SIGUSR1, &sa, NULL), FAIL, "sigaction() failed!\n");
 	
 	/* get parent pid */
 	parent_pid = getppid();
-	
-	printf("Child (pong): my pid = %d, my parent pid = %d\n", getpid(), parent_pid);
-
+	printf("Child (%d): sending SIGUSR2 to parent (%d)\n", getpid(), parent_pid);
+	kill(parent_pid, SIGUSR2);
 	while (1)
 	{
-		if (got_sigusr1)
+		while (!got_sigusr1)
 		{
-			printf("Child: received SIGUSR1 from parent\n");
-			got_sigusr1 = FALSE;
-
-			sleep(1);
-			
-			/* send signal SIGUSR2 to the child */
-			printf("Child: sending SIGUSR2 to parent\n");
-			kill(parent_pid, SIGUSR2);
+			pause();
 		}
+		
+		printf("Child (%d): received SIGUSR1 from parent (%d)\n", getpid(), parent_pid);
+		got_sigusr1 = FALSE;
+		
+		/* send signal SIGUSR2 to the child */
+		printf("Child: sending SIGUSR2 to parent\n");
+		kill(parent_pid, SIGUSR2);
 	}
 
 	return SUCCESS;
@@ -68,8 +67,6 @@ static void ChildHandler(int sig)
 	/* if the received signal is SIGUSR1 */
 	if (SIGUSR1 == sig)
 	{
-		printf("Child: received SIGUSR1 from parent\n");
-		
 		/* send signal SIGUSR2 to the parent */
 		got_sigusr1 = TRUE;
 	}
