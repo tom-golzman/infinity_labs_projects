@@ -46,7 +46,7 @@ int main()
 	kill(parent_pid, SIGUSR2);
 	while (1)
 	{
-		while (!got_sigusr1)
+		if (!got_sigusr1)
 		{
 			pause();
 		}

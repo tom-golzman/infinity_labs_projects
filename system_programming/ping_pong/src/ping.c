@@ -57,12 +57,9 @@ int main()
 	}
 	
 	/* wait for a signal from the child */
-	while (!got_sigusr2)
-	{
+
 		pause();
-	}
-	
-	got_sigusr2 = FALSE;
+
 	printf("Parent: received first signal from the child\n");
 
 	while (rounds_counter < NUM_ROUNDS)
@@ -72,7 +69,7 @@ int main()
 		kill(child_pid, SIGUSR1);
 
 		/* wait for a signal from the child */
-		while (!got_sigusr2)
+		if (!got_sigusr2)
 		{
 			pause();
 		}
