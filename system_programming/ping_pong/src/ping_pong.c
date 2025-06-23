@@ -1,12 +1,13 @@
 /**
 	Written By: Tom Golzman
 	Date: 19/06/2025
-	Reviewed By: 
+	Reviewed By: Ola Kaz
 **/
 
 /************************************includes************************************/
 #define _POSIX_C_SOURCE 200809L
 
+#include <assert.h>	/* assert() */
 #include <unistd.h>	/* pid_t, fork(), getpid(), getppid() */
 #include <signal.h>	/* struct sigaction, SIGUSR1, SIGUSR2 */
 #include <stdio.h>	/* printf() */
@@ -60,13 +61,19 @@ void PingPong1()
 	/* parent process */
 	else
 	{
+		sleep(1);
+	
 		RunParent();
+		
+		wait(NULL);
 	}
 }
 
 /********************************Private Functions********************************/
 static void RunChild(void)
 {
+	int status = 0;
+	
 	/* create sigaction variable */
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
@@ -83,19 +90,23 @@ static void RunChild(void)
 	/* while the child process is running, pause until it gets signal */
 	while (child_running)
 	{
-		pause();
+		status = pause();
+		ExitIfBad(-1 == status, FAIL, "pause() FAILED!\n");
 		
 		if (got_sigusr1)
 		{
-			printf("child: received SIGUSR1 from parent\n");
+			DEBUG_ONLY(printf("child: received SIGUSR1 from parent\n"););
 			got_sigusr1 = FALSE;
 
-			kill(parent_pid, SIGUSR2);
+			/* send signal SIGUSR2 to the parent */
+			status = kill(parent_pid, SIGUSR2);
+			ExitIfBad(-1 != status, FAIL, "kill() FAILED!\n");	
+			
 			++rounds_counter;
 
 			if (rounds_counter == NUM_ROUNDS)
 			{
-				printf("child: done after %d rounds\n", rounds_counter);
+				DEBUG_ONLY(printf("child: done after %d rounds\n", rounds_counter););
 				child_running = FALSE;
 			}
 		}
@@ -106,6 +117,8 @@ static void RunChild(void)
 
 static void RunParent(void)
 {
+	int status = 0;
+	
 	/* create sigaction variable */
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
@@ -114,32 +127,35 @@ static void RunParent(void)
 	sa.sa_handler = ParentHandler;
 
 	/* determine signal action */
-	sigaction(SIGUSR2, &sa, NULL);
-
-	sleep(1);
-	/* send signal to the child */
-	printf("parent: sending SIGUSR1 to child\n");
-	kill(child_pid, SIGUSR1);
-
+	status = sigaction(SIGUSR2, &sa, NULL);
+	ExitIfBad(0 == status, FAIL, "sigaction() failed!\n");
+	
+	/* send a signal to the child */
+	DEBUG_ONLY(printf("parent: sending SIGUSR1 to child\n"););
+	status = kill(child_pid, SIGUSR1);
+	ExitIfBad(-1 != status, FAIL, "kill() FAILED!\n");	
+	
 	/* while the parent process is running, pause until it gets signal */
 	while (parent_running)
 	{
-		pause();
+		status = pause();
+		ExitIfBad(-1 == status, FAIL, "pause() FAILED!\n");
 		
 		if (got_sigusr2)
 		{
-			printf("parent: received SIGUSR2 from child\n");
+			DEBUG_ONLY(printf("parent: received SIGUSR2 from child\n"););
 			++rounds_counter;
 			got_sigusr2 = FALSE;
 
 			if (rounds_counter == NUM_ROUNDS)
 			{
-				printf("parent: done after %d rounds\n", rounds_counter);
+				DEBUG_ONLY(printf("parent: done after %d rounds\n", rounds_counter););
 				parent_running = FALSE;
 			}
 			else
 			{
-				kill(child_pid, SIGUSR1);
+				status = kill(child_pid, SIGUSR1);
+				ExitIfBad(-1 != status, FAIL, "kill() FAILED!\n");
 			}
 		}
 	}
@@ -147,18 +163,16 @@ static void RunParent(void)
 
 static void ChildHandler(int sig)
 {
-	/* if the received signal is SIGUSR1 */
-	if (SIGUSR1 == sig)
-	{
-		got_sigusr1 = TRUE;
-	}
+	/* assert that the received signal is SIGUSR1 */
+	assert(SIGUSR1 == sig);
+
+	got_sigusr1 = TRUE;
 }
 
 static void ParentHandler(int sig)
 {
-	/* if the received signal is SIGUSR2 */
-	if (SIGUSR2 == sig)
-	{
-		got_sigusr2 = TRUE;
-	}
+	/* assert that the received signal is SIGUSR2 */
+	assert(SIGUSR2 == sig);
+
+	got_sigusr2 = TRUE;
 }

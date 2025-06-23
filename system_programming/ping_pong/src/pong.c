@@ -1,12 +1,13 @@
 /**
 	Written By: Tom Golzman
 	Date: 21/06/2025
-	Reviewed By: 
+	Reviewed By: Sami
 **/
 
 /************************************includes************************************/
 #define _POSIX_C_SOURCE 200809L
 
+#include <assert.h>	/* assert() */
 #include <unistd.h>	/* pid_t, fork() */
 #include <signal.h>	/* struct sigaction, SIGUSR1, SIGUSR2 */
 #include <stdio.h>	/* printf() */
@@ -30,6 +31,8 @@ static void ChildHandler(int sig);
 /************************************Functions************************************/
 int main()
 {
+	int status = 0;
+	
 	/* create sigaction variable */
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
@@ -42,21 +45,26 @@ int main()
 	
 	/* get parent pid */
 	parent_pid = getppid();
-	printf("Child (%d): sending SIGUSR2 to parent (%d)\n", getpid(), parent_pid);
-	kill(parent_pid, SIGUSR2);
+
 	while (1)
 	{
+		/* send signal SIGUSR2 to the parent */
+		DEBUG_ONLY(printf("Child (%d): sending SIGUSR2 to parent (%d)\n", getpid(), parent_pid););
+		status = kill(parent_pid, SIGUSR2);
+		ExitIfBad(-1 != status, FAIL, "kill() FAILED!\n");
+
 		if (!got_sigusr1)
 		{
-			pause();
+			status = pause();
+			ExitIfBad(-1 == status, FAIL, "pause() FAILED!\n");
 		}
 		
-		printf("Child (%d): received SIGUSR1 from parent (%d)\n", getpid(), parent_pid);
+		DEBUG_ONLY(printf("Child (%d): received SIGUSR1 from parent (%d)\n", getpid(), parent_pid););
 		got_sigusr1 = FALSE;
 		
-		/* send signal SIGUSR2 to the child */
-		printf("Child: sending SIGUSR2 to parent\n");
-		kill(parent_pid, SIGUSR2);
+		/* send signal SIGUSR2 to the parent 
+		DEBUG_ONLY(printf("Child: sending SIGUSR2 to parent\n"););
+		DEBUG_ONLY(-1 == kill(parent_pid, SIGUSR2), FAIL, "kill() FAILED!\n");*/
 	}
 
 	return SUCCESS;
@@ -64,10 +72,8 @@ int main()
 
 static void ChildHandler(int sig)
 {
-	/* if the received signal is SIGUSR1 */
-	if (SIGUSR1 == sig)
-	{
-		/* send signal SIGUSR2 to the parent */
-		got_sigusr1 = TRUE;
-	}
+	/* assert that the received signal is SIGUSR1 */
+	assert(SIGUSR1 == sig);
+
+	got_sigusr1 = TRUE;
 }
