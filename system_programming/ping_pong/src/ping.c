@@ -57,8 +57,7 @@ int main()
 	}
 	
 	/* wait for a signal from the child */
-
-		pause();
+	pause();
 
 	printf("Parent: received first signal from the child\n");
 
