@@ -39,11 +39,6 @@ void InitArray(int* arr, size_t size)
 		pthread_create(&threads[i], NULL, WriteIndex, (void*)i);
 	}
 	
-	for (i = 0; i < size; ++i)
-	{
-		pthread_join(threads[i], NULL);
-	}
-	
 	free(threads);
 	threads = NULL;
 }

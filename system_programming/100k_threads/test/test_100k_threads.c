@@ -34,6 +34,7 @@ void TestEx1()
 
 	start = time(NULL);
 	InitArray(arr, NUM_THREADS);
+	sleep(10);
 	end = time(NULL);	
 
 	printf("time = %f\n", difftime(end, start));
