@@ -11,17 +11,19 @@ enum { NUM_PRINTS = 10 };
 
 /************************************Functions Forward Decleration************************************/
 void TestEx1();
+void TestEx3();
 
-static int IsArrValid(int* arr, size_t size);
+static int IsArrValid(int* arr, int size);
 
 /************************************main************************************/
 int main(void)
 {
 	TestEx1();
+	TestEx3();
 	
 	printf("\n");
 	
-	return SUCCESS;	
+	return SUCCESS;
 }
 
 /************************************Functions************************************/
@@ -30,14 +32,14 @@ void TestEx1()
 	int arr[NUM_THREADS] = {0};
 	time_t end, start;
 
-    printf(BOLD_TITLE "\nTest: ()\n" RESET);
+    printf(BOLD_TITLE "\nTest InitArr\n" RESET);
 
 	start = time(NULL);
 	InitArray(arr, NUM_THREADS);
-	sleep(10);
+	sleep(1);
 	end = time(NULL);	
 
-	printf("time = %f\n", difftime(end, start));
+	printf("time = %f seconds\n", difftime(end, start));
 	
 	if (IsArrValid(arr, NUM_PRINTS))
 	{
@@ -49,9 +51,33 @@ void TestEx1()
 	}
 }
 
-static int IsArrValid(int* arr, size_t size)
+void TestEx3()
 {
-	size_t i = 0;
+	int arr[NUM_THREADS] = {0};
+	time_t end, start;
+
+    printf(BOLD_TITLE "\nTest WorkLoad\n" RESET);
+
+	start = time(NULL);
+	WorkLoad(arr, NUM_THREADS);
+	sleep(1);
+	end = time(NULL);	
+
+	printf("time = %f seconds\n", difftime(end, start));
+	
+	if (IsArrValid(arr, NUM_PRINTS))
+	{
+		printf(GREEN "Test passed!\n" RESET);
+	}
+	else
+	{
+		printf(RED "Test FAILED!\n" RESET);
+	}
+}
+
+static int IsArrValid(int* arr, int size)
+{
+	int i = 0;
 	
 	assert(NULL != arr);
 	
@@ -59,7 +85,7 @@ static int IsArrValid(int* arr, size_t size)
 	{
 		if (arr[i] != i)
 		{
-			printf("arr[%lu] = %d\n", i, arr[i]);
+			printf("arr[%d] = %d\n", i, arr[i]);
 			return FALSE;
 		}
 	}

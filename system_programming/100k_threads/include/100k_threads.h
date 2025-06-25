@@ -6,9 +6,10 @@
 /************************************typedef************************************/
 
 /************************************define************************************/
-enum { NUM_THREADS = 100000 };
+enum { NUM_THREADS = 10000 };
 
 /************************************Functions************************************/
-void InitArray(int* arr, size_t size);
+void InitArray(int* arr, int size);
+void WorkLoad(int* arr, int size);
 
 #endif /*__ILRD_100K_THREADS_H__*/
