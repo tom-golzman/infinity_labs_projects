@@ -111,8 +111,5 @@ static int IsArrValid(int* arr, int size)
 		}
 	}
 	
-	
-	
 	return TRUE;
 }
-

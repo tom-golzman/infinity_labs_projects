@@ -9,6 +9,7 @@
 #include <stddef.h>		/* size_t */
 #include <stdlib.h>		/* malloc, free */
 #include <pthread.h>	/* pthread_create, pthread_join */
+#include <omp.h>		/* openMP */
 
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 #include "100k_threads.h"
@@ -93,7 +94,7 @@ size_t WorkLoad(int* arr, size_t size)
 	threads = (pthread_t*)calloc(1, size * sizeof(pthread_t));
 	ExitIfBad(NULL != threads, FAIL, "threads calloc() FAILED!\n");
 	
-	for (i = 0; i <= size; ++i)
+	for (i = 0; i < size; ++i)
 	{
 		args = (args_t*)calloc(1, sizeof(args_t));
 		ExitIfBad(NULL != args, FAIL, "args calloc() FAILED!\n");
@@ -117,7 +118,8 @@ size_t WorkLoad(int* arr, size_t size)
 	for (i = 0; i < size; ++i)
 	{
 		pthread_join(threads[i], &result);
-		sum += (size_t)result;
+		sum += *(size_t*)result;
+		free(result);
 	}
 	
 	free(threads);
@@ -131,15 +133,16 @@ static void* SumOfDivisors(void* args)
 	size_t start = ((args_t*)args)->start;
 	size_t end = ((args_t*)args)->end;
 	size_t num = ((args_t*)args)->num;
-	size_t sum = 0;
 	size_t i = 0;
-	size_t* result = NULL;
+	
+	size_t* sum = (size_t*)calloc(1, sizeof(size_t));
+	ExitIfBad(NULL != sum, FAIL, "sum calloc() FAILED!\n");
 	
 	for (i = start; i <= end; ++i)
 	{
 		if (0 == num % i)
 		{
-			sum += i;
+			*sum += i;
 		}
 	}
 	
@@ -154,6 +157,7 @@ size_t SimpleWorkLoad()
 	size_t sum = 0;
 	size_t i = 0;
 	
+	#pragma omp parallel for
 	for (i = 1; i <= 1234567890; ++i)
 	{
 		if (0 == 1234567890 % i)
@@ -164,15 +168,3 @@ size_t SimpleWorkLoad()
 	
 	return sum;
 }
-
-
-
-
-
-
-
-
-
-
-
-

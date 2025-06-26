@@ -1,5 +1,5 @@
 CC = gcc
-BASE_CFLAGS = -ansi -pedantic-errors -Wall -Wextra -fPIC -lpthread
+BASE_CFLAGS = -ansi -pedantic-errors -Wall -Wextra -fPIC -lpthread -fopenmp
 DEBUG_FLAGS = -g -DDEBUG
 RELEASE_FLAGS = -o3 -DNDEBUG
 
