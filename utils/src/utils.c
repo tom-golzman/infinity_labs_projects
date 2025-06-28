@@ -13,3 +13,8 @@ void ExitIfBad(int is_good, int exit_status, const char* message)
 	}
 }
 
+void Log(const char* message)
+{
+    /* print message to stderr */
+    perror(message);
+}

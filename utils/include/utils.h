@@ -32,5 +32,6 @@ enum { FALSE = 0, TRUE = 1 };
 /************************************Functions************************************/
 /* systemcalls handling */
 void ExitIfBad(int is_good, int exit_stat, const char* msg);
+void Log(const char* message);
 
 #endif /* __UTILS_H__ */
