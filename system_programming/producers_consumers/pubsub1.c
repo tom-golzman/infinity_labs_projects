@@ -5,27 +5,24 @@
 **/
 
 /************************************includes*************************************/
-#include <assert.h> /* assert() */
-#include <pthread.h> /* pthread_t */
+#include <assert.h>		/* assert() */
+#include <pthread.h>	/* pthread_t */
 
-
-#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
+#include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 
 #ifndef NDEBUG
-#include <stdio.h>
+	#include <stdio.h>
 #endif
+
 /**************************************define*************************************/
 enum { NUM_ROUNDS = 3 };
 
-volatile int lock = 0; /* 0 = opened , 1 = locked */
 volatile int shared_val = 0;
-volatile int is_val_available = FALSE;
+volatile int is_val_available = 0;
 
 /********************************Private Functions********************************/
 static void* Producer(void* arg);
 static void* Consumer(void* arg);
-static void SpinLock();
-static void SpinUnlock();
 
 /************************************Functions************************************/
 int main()
@@ -46,20 +43,24 @@ static void* Producer(void* arg)
 {
 	int i = 0;
 	
+	/* for each number of rounds */
 	for (i = 0; i < NUM_ROUNDS; ++i)
 	{
 		while (1)
 		{
-			SpinLock();
-			if (!is_val_available)
+			/* check if the value isn't available (was read) */
+			if (0 == __sync_fetch_and_add(&is_val_available, 0))
 			{
+				/* update the shared value */
 				shared_val = i;
-				is_val_available = TRUE;
-				DEBUG_ONLY(printf("producer: %d\n", i););
-				SpinUnlock();
+				
+				DEBUG_ONLY(printf("producer: %d\n", shared_val););
+
+				/* change the value to be unavailable */
+				__sync_fetch_and_add(&is_val_available, 1);
+				
 				break;
 			}
-			SpinUnlock();
 		}
 	}
 	
@@ -71,40 +72,26 @@ static void* Producer(void* arg)
 static void* Consumer(void* arg)
 {
 	int i = 0;
-	int val = 0;
 	
+	/* for each number of rounds */
 	for (i = 0; i < NUM_ROUNDS; ++i)
 	{
 		while (1)
 		{
-			SpinLock();
-			if (is_val_available)
+			/* check if the value is available (was written) */
+			if (1 == __sync_fetch_and_add(&is_val_available, 0))
 			{
-				val = shared_val;
-				is_val_available = FALSE;
-				DEBUG_ONLY(printf("consumer: %d\n", val););
-				SpinUnlock();
+				DEBUG_ONLY(printf("consumer: %d\n", shared_val););
+
+				/* change the value to be unavailable */
+				__sync_fetch_and_add(&is_val_available, -1);
+				
 				break;
 			}		
-			
-			SpinUnlock();
 		}
 	}
 	
 	return NULL;
 	
 	(void)arg;
-}
-
-static void SpinLock()
-{
-	while (__sync_lock_test_and_set(&lock, 1))
-	{
-		/* busy wait */
-	}
-}
-
-static void SpinUnlock()
-{
-	__sync_lock_release(&lock);
 }
