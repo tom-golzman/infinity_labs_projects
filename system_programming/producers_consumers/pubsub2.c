@@ -17,7 +17,7 @@
 #endif
 
 /**************************************define*************************************/
-enum { NUM_ROUNDS = 10, NUM_PRODUCERS = 10, NUM_CONSUMERS = 10 };
+enum { NUM_ROUNDS = 1, NUM_PRODUCERS = 3, NUM_CONSUMERS = 3 };
 
 static dll_t* shared_list = NULL;
 static pthread_mutex_t list_mutex;
@@ -74,6 +74,12 @@ int main()
 		pthread_join(producers[i], NULL);
 	}
 	
+	/* join pconsumers threads */
+	for (i = 0; i < NUM_CONSUMERS; ++i)
+	{
+		pthread_join(consumers[i], NULL);
+	}
+	
 	DListDestroy(shared_list);
 	pthread_mutex_destroy(&list_mutex);
 	
@@ -116,20 +122,27 @@ static void* Consumer(void* arg)
 	id = *(int*)arg;
 	free(arg);
 	
-	pthread_mutex_lock(&list_mutex);
-	
-	if (!DListIsEmpty(shared_list))
+	while (1)
 	{
-		temp_data = (int*)DListGetData(DListBegin(shared_list));
-		data = *temp_data;
-		free(temp_data);
-
-		DListPopFront(shared_list);
+		pthread_mutex_lock(&list_mutex);
 		
-		DEBUG_ONLY(printf("consumer num %d: %d\n", id, data););
-	}
+		if (!DListIsEmpty(shared_list))
+		{
+			temp_data = (int*)DListGetData(DListBegin(shared_list));
+			data = *temp_data;
+			free(temp_data);
 
-	pthread_mutex_unlock(&list_mutex);
+			DListPopFront(shared_list);
+			
+			DEBUG_ONLY(printf("consumer num %d: %d\n", id, data););
+
+			pthread_mutex_unlock(&list_mutex);
+
+			break;			
+		}
+
+		pthread_mutex_unlock(&list_mutex);
+	}
 	
 	return NULL;
 }
