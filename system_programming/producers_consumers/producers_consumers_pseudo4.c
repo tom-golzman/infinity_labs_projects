@@ -1,10 +1,9 @@
+/* create a global int array */
+
 int main()
 {
 	/* create producers & consumers threads arrays */
 
-	/* create a linked list */
-	/* handle failure */
-		
 	/* create a semaphore */
 	
 	/* for each index in producers array */
@@ -27,10 +26,14 @@ static void* ProduceThreadFunc(void* arg)
 	/* while 1 */
 		/* call Producer() */
 		
+		/* wait for free space in the array */
 		/* lock the mutex */
+		
 		/* push the value to the list */
-		/* increment the semaphore by 1 with sem_post() */
+		
+		/* increment the used space semaphore by 1 with sem_post() */
 		/* unlock the mutex */
+	
 	/* end while */
 	
 	/* return NULL */
@@ -44,11 +47,13 @@ static int Producer()
 static void* ConsumeThreadFunc(void* arg)
 {
 	/* while 1 */
-		/* wait to new message */
+		/* wait for data to read in the array */
 		/* lock the mutex */
 
 		/* pop the value from the list */
 		/* free the value */
+		
+		/* increment the free space semaphore by 1 with sem_post() */		
 		
 		/* unlock the mutex */
 		/* call Consumer() */
