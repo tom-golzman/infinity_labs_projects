@@ -21,7 +21,7 @@
 enum { NUM_ROUNDS = 1, NUM_PRODUCERS = 5, NUM_CONSUMERS = 5 };
 
 static dll_t* shared_list = NULL;
-static pthread_mutex_t list_mutex;
+static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static sem_t items_available;
 
 /********************************Private Functions********************************/
@@ -42,9 +42,6 @@ int main()
 	/* create a linked list */
 	shared_list = DListCreate();
 	ExitIfBad(NULL != shared_list, FAIL, "DListCreate() FAILED!");
-	
-	/* create a list mutex */
-	pthread_mutex_init(&list_mutex, NULL);
 	
 	/* create a semaphore */
 	sem_init(&items_available, 0, 0);
@@ -84,15 +81,6 @@ int main()
 	{
 		pthread_join(consumers[i], NULL);
 	}
-	
-	/* destroy the list */
-	DListDestroy(shared_list);
-	
-	/* destroy the mutex */
-	pthread_mutex_destroy(&list_mutex);
-	
-	/* destroy the semaphore */
-	sem_destroy(&items_available);
 	
 	return SUCCESS;
 }

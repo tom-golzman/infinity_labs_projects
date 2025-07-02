@@ -20,7 +20,7 @@
 enum { NUM_ROUNDS = 1, NUM_PRODUCERS = 3, NUM_CONSUMERS = 3 };
 
 static dll_t* shared_list = NULL;
-static pthread_mutex_t list_mutex;
+static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /********************************Private Functions********************************/
 static void* Producer(void* arg);
@@ -40,9 +40,6 @@ int main()
 	/* create a linked list */
 	shared_list = DListCreate();
 	ExitIfBad(NULL != shared_list, FAIL, "DListCreate() FAILED!");
-	
-	/* create a list mutex */
-	pthread_mutex_init(&list_mutex, NULL);
 	
 	/* initialize producers arrays with ids and threads */
 	for (i = 0; i < NUM_PRODUCERS; ++i)
@@ -74,7 +71,7 @@ int main()
 		pthread_join(producers[i], NULL);
 	}
 	
-	/* join pconsumers threads */
+	/* join consumers threads */
 	for (i = 0; i < NUM_CONSUMERS; ++i)
 	{
 		pthread_join(consumers[i], NULL);
