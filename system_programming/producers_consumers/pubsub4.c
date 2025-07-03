@@ -75,28 +75,6 @@ int main()
 		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
 	}
 	
-	/* join producers threads */
-	for (i = 0; i < NUM_PRODUCERS; ++i)
-	{
-		pthread_join(producers[i], NULL);
-	}
-	
-	/* join pconsumers threads */
-	for (i = 0; i < NUM_CONSUMERS; ++i)
-	{
-		pthread_join(consumers[i], NULL);
-	}
-		
-	/* destroy the list */
-	DListDestroy(shared_list);
-	
-	/* destroy the mutex */
-	pthread_mutex_destroy(&mutex);
-		
-	/* destroy the semaphores */
-	sem_destroy(&sem_free_space);
-	sem_destroy(&sem_used_space);
-	
 	return SUCCESS;
 }
 

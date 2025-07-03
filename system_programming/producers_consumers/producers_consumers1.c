@@ -38,9 +38,10 @@ int main()
 	status = pthread_create(&consumer, NULL, ConsumeThreadFunc, NULL);
 	ExitIfBad(SUCCESS == status, FAIL, "pthread_create() consumer FAILED!");
 
+	/* while (1) */
 	while (1)
 	{
-		
+		/* do nothing */
 	}
 
 	/* return SUCCESS */

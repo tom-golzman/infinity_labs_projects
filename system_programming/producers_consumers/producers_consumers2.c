@@ -8,13 +8,10 @@
 #include <assert.h>		/* assert() */
 #include <pthread.h>	/* pthread_t */
 #include <stdlib.h>		/* calloc(), free() */
+#include <stdio.h>		/* printf() */
 
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 #include "dll.h"		/* dll_t, Create(), Destroy(), PushBack(), PopFront(), IsEmpty() */
-
-#ifndef NDEBUG
-	#include <stdio.h>
-#endif
 
 /**************************************define*************************************/
 enum { NUM_ROUNDS = 1, NUM_PRODUCERS = 3, NUM_CONSUMERS = 3 };
@@ -76,9 +73,10 @@ int main()
 		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
 	}
 	
+	/* while (1) */
 	while (1)
 	{
-		
+		/* do nothing */
 	}
 		
 	/* return SUCCESS */

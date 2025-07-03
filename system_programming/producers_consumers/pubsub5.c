@@ -9,21 +9,34 @@
 #include <pthread.h>	/* pthread_t */
 #include <stdlib.h>		/* calloc(), free() */
 #include <semaphore.h>	/* sem_t */
-#include <stdio.h>		/* printf() */
 
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 #include "dll.h"		/* dll_t, Create(), Destroy(), PushBack(), PopFront(), IsEmpty() */
 
-/**************************************define*************************************/
-enum { NUM_ROUNDS = 1, NUM_PRODUCERS = 5, NUM_CONSUMERS = 5 };
+#ifndef NDEBUG
+	#include <stdio.h>
+#endif
 
-static dll_t* shared_list = NULL;
-static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
-static sem_t items_available;
+/**************************************define*************************************/
+enum { NUM_ROUNDS = 2, NUM_PRODUCERS = 3, NUM_CONSUMERS = 3, LIST_SIZE = 5 };
+
+typedef struct fsq
+{
+	int* array;
+	size_t capacity;
+	size_t read_idx;
+	size_t write_idx;
+	sem_t sem_free_space;
+	sem_t sem_used_sapce;
+	pthread_mutex_t enqueue_mutex;
+	pthread_mutex_t dequeue_mutex;
+} fsq_t;
 
 /********************************Private Functions********************************/
-static void* Producer(void* arg);
-static void* Consumer(void* arg);
+static fsq_t* FSQCreate(size_t capacity);
+static void FSQDestroy(fsq_t* fsq);
+static void FSQEnqueue(fsq_t* fsq, int* data);
+static int FSQDequeue(fsq_t* fsq);
 
 /************************************Functions************************************/
 int main()
@@ -40,8 +53,12 @@ int main()
 	shared_list = DListCreate();
 	ExitIfBad(NULL != shared_list, FAIL, "DListCreate() FAILED!");
 	
-	/* create a semaphore */
-	sem_init(&items_available, 0, 0);
+	/* create a list mutex */
+	pthread_mutex_init(&mutex, NULL);
+	
+	/* init the semaphores */
+	sem_init(&sem_free_space, 0, LIST_SIZE);
+	sem_init(&sem_used_space, 0, 0);
 	
 	/* initialize producers arrays with ids and threads */
 	for (i = 0; i < NUM_PRODUCERS; ++i)
@@ -78,76 +95,80 @@ int main()
 	{
 		pthread_join(consumers[i], NULL);
 	}
+		
+	/* destroy the list */
+	DListDestroy(shared_list);
+	
+	/* destroy the mutex */
+	pthread_mutex_destroy(&mutex);
+		
+	/* destroy the semaphores */
+	sem_destroy(&sem_free_space);
+	sem_destroy(&sem_used_space);
 	
 	return SUCCESS;
 }
-
-static void* Producer(void* arg)
+static fsq_t* FSQCreate(size_t capacity)
 {
-	int i = 0;
-	int id = 0;
-	int* data = NULL;
+	fsq_t* fsq = NULL;
+	int* array = NULL;
 	
-	assert(NULL != arg);
+	assert(capacity > 0);
 	
-	/* save the arg (id) and free it */
-	id = *(int*)arg;
-	free(arg);
+	fsq = (fsq_t*)calloc(1, sizeof(fsq_t));
+	ExitIfBad(NULL != fsq_t, FAIL, "fsq calloc() FAILED!");
 	
-	/* allocate the data */
-	data = calloc(1, sizeof(int));
-	*data = id + i + 10;
-	
-	/* lock the mutex */
-	pthread_mutex_lock(&list_mutex);
-	
-	/* push the data to the list */
-	DListPushBack(shared_list, data);
-	
-	DEBUG_ONLY(printf("producer num %d: %d\n", id, *data););
-
-	/* unlock the mutex */
-	pthread_mutex_unlock(&list_mutex);
-
-	/* increment the semaphore by 1 */
-	sem_post(&items_available);	
-	
-	return NULL;
-}
-
-static void* Consumer(void* arg)
-{
-	int id = 0;
-	int data = 0;
-	int* temp_data = NULL;
-	
-	assert(NULL != arg);
-	
-	/* save the arg (id) and free it */
-	id = *(int*)arg;
-	free(arg);
-	
-	/* wait until the semaphore is 1 */
-	sem_wait(&items_available);
-
-	/* lock the mutex */
-	pthread_mutex_lock(&list_mutex);
-	
-	/* check if the list is not empty */
-	if (!DListIsEmpty(shared_list))
+	array = (int*)calloc(capacity, sizeof(int));
+	if (NULL == array)
 	{
-		/* pop the data from the list and free it */
-		temp_data = (int*)DListGetData(DListBegin(shared_list));
-		data = *temp_data;
-		free(temp_data);
-
-		DListPopFront(shared_list);
+		FSQDestroy(fsq);
 		
-		DEBUG_ONLY(printf("consumer num %d: %d\n", id, data););
-
-		/* unlock the mutex */
-		pthread_mutex_unlock(&list_mutex);
+		return NULL;
 	}
+	
+	fsq->capacity = capacity;
+	fsq->read_idx = 0;
+	fsq->write_idx = 0;
+	
+	pthread_mutex_init(&fsq->enqueue_mutex, NULL);
+	pthread_mutex_init(&fsq->dequeue_mutex, NULL);
+	
+	sem_init(&fsq->sem_free_space, 0, capacity);
+	sem_init(&fsq->sem_free_space, 0, 0);
 
-	return NULL;
+	return fsq;
 }
+
+static void FSQDestroy(fsq_t* fsq)
+{
+	if (NULL == fsq)
+	{
+		return;
+	}
+	
+	free(fsq->array);
+	
+	pthread_mutex_destroy(&fsq->enqueue_mutex);
+	pthread_mutex_destroy(&fsq->dequeue_mutex);
+	
+	sem_destroy(&fsq->sem_free_space);
+	sem_destroy(&fsq->sem_used_space);
+
+	DEBUG_ONLY(
+		fsq->array = BAD_MEM(int*);
+		fsq->capacity = 0;
+		fsq->read_idx = 0;
+		fsq->write_idx = 0;
+	);
+
+	free(fsq);
+}
+
+static void FSQEnqueue(fsq_t* fsq, int* data)
+{
+	assert(NULL != fsq);
+
+	sem_wait(&fsq->sem_free_space);
+}
+
+static int FSQDequeue(fsq_t* fsq);
