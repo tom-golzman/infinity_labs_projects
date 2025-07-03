@@ -1,69 +1,136 @@
-/* create a global int array */
+/**
+	Written By: Tom Golzman
+	Date: 02/07/2025
+	Reviewed By: 
+**/
 
+/************************************includes*************************************/
+#include <assert.h>			/* assert() */
+#include <pthread.h>		/* pthread_t */
+#include <stdlib.h>			/* calloc(), free() */
+#include <semaphore.h>		/* sem_t */
+#include <stdio.h>			/* printf */
+
+#include "utils.h"			/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
+#include "waitable_queue.h"	/* wq_t, WQCreate(), WQDestroy(), WQEnqueue(), WQDequeue() */
+
+/**************************************define*************************************/
+enum { CAPACITY = 5, NUM_PRODUCERS = 3, NUM_CONSUMERS = 3 };
+
+static wq_t* g_queue;
+
+/********************************Private Functions********************************/
+static void* ProduceThreadFunc(void* arg);
+static void* ConsumeThreadFunc(void* arg);
+static int* Produce(int val);
+static void Consume(int* data);
+
+/************************************Functions************************************/
 int main()
 {
-	/* create producers & consumers threads arrays */
+	int i = 0;
+	int* val = NULL;
+	
+	/* create Producers & Consumers threads arrays */
+	pthread_t producers[NUM_PRODUCERS];
+	pthread_t consumers[NUM_CONSUMERS];
 
-	/* create a semaphore */
+	/* create a global waitable queue & handle failure */
+	g_queue = WQCreate(CAPACITY);
+	ExitIfBad(NULL != g_queue, FAIL, "WQCreate() Failed!");
 	
 	/* for each index in producers array */
+	for (i = 0; i < NUM_PRODUCERS; ++i)
+	{
 		/* alloacte data */
+		val = (int*)calloc(1, sizeof(int));
 		/* handle failure */
-		/* create a thread */		
-		/* handle failure */
-	
+		ExitIfBad(NULL != val, FAIL, "calloc() FAILED!\n");
+
+		*val = i;
+
+		/* create a thread & handle failure */
+		ExitIfBad(0 == pthread_create(&producers[i], NULL, ProduceThreadFunc, val), FAIL, "pthread_create() FAILED!\n");
+	}
+		
 	/* for each index in consumers array */
-		/* alloacte data */
-		/* handle failure */
-		/* create a thread */		
-		/* handle failure */
+	for (i = 0; i < NUM_CONSUMERS; ++i)
+	{
+		/* create a thread & handle failure */
+		ExitIfBad(0 == pthread_create(&consumers[i], NULL, ConsumeThreadFunc, val), FAIL, "pthread_create() FAILED!\n");
+	}
 	
+	/* while (1) */
+	while (1)
+	{
+		/* do nothing */
+	}
+		
 	/* return SUCCESS */
+	return SUCCESS;
 }
 
 static void* ProduceThreadFunc(void* arg)
 {
-	/* while 1 */
-		/* call Producer() */
-		
-		/* wait for free space in the array */
-		/* lock the mutex */
-		
-		/* push the value to the list */
-		
-		/* increment the used space semaphore by 1 with sem_post() */
-		/* unlock the mutex */
+	int* value = NULL;
+	int val = (assert(NULL != arg), *(int*)arg);
 	
-	/* end while */
+	free(arg);
+	
+	/* while 1 */
+	while(1)
+	{
+		/* call Produce() */
+		value = Produce(val);
+		
+		/* enqueue value */
+		RET_IF_BAD_CLEAN(FALSE != WQEnqueue(g_queue, value), NULL, "WQEnqueue() FAILED!", WQDestroy(g_queue));
+	}
 	
 	/* return NULL */
+	return NULL;
 }
 
-static int Producer()
+static int* Produce(int val)
 {
-	/* return the value */
+	int* value = NULL;
+
+	/* allocate the value */	
+	value = calloc(1, sizeof(int));
+	
+	/* handle failure */
+	RET_IF_BAD_CLEAN(NULL != value, NULL, "calloc() value FAILED!", WQDestroy(g_queue));
+
+	printf("produced: %d\n", val);
+
+	*value = val;
+	
+	return value;
 }
 
 static void* ConsumeThreadFunc(void* arg)
 {
+	int* value = 0;
+	
 	/* while 1 */
-		/* wait for data to read in the array */
-		/* lock the mutex */
-
-		/* pop the value from the list */
-		/* free the value */
+	while (1)
+	{
+		/* dequeue value */
+		RET_IF_BAD_CLEAN(FAIL != WQDequeue(g_queue, value), NULL, "WQDequeue() FAILED!", WQDestroy(g_queue));
 		
-		/* increment the free space semaphore by 1 with sem_post() */		
-		
-		/* unlock the mutex */
-		/* call Consumer() */
-		
-	/* end while */
+		/* call Consume() */
+		Consume(value);
+	}
 	
 	/* return NULL */
+	return NULL;
+	
+	(void)arg;	
 }
 
-static void Consumer()
+static void Consume(int* value)
 {
-	/* print the value */
+	printf("consumed: %d\n", *value);
+
+	free(value);
 }

@@ -24,8 +24,8 @@ static sem_t items_available;
 /********************************Private Functions********************************/
 static void* ProduceThreadFunc(void* arg);
 static void* ConsumeThreadFunc(void* arg);
-static int* Producer(int val);
-static void Consumer(int* data);
+static int* Produce(int val);
+static void Consume(int* data);
 
 /************************************Functions************************************/
 int main()
@@ -34,9 +34,9 @@ int main()
 	int* val = NULL;
 	int status = -1;
 	
-	/* create producers & consumers threads arrays */
-	pthread_t producers[NUM_PRODUCERS];
-	pthread_t consumers[NUM_CONSUMERS];
+	/* create Produces & Consumes threads arrays */
+	pthread_t Produces[NUM_PRODUCERS];
+	pthread_t Consumes[NUM_CONSUMERS];
 	
 	/* create a linked list */
 	shared_list = DListCreate();
@@ -46,7 +46,7 @@ int main()
 	/* create a semaphore */
 	sem_init(&items_available, 0, 0);
 	
-	/* for each index in producers array */
+	/* for each index in Produces array */
 	for (i = 0; i < NUM_PRODUCERS; ++i)
 	{
 		/* alloacte data */
@@ -57,19 +57,18 @@ int main()
 		*val = i;
 
 		/* create a thread */
-		status = pthread_create(&producers[i], NULL, ProduceThreadFunc, val);
+		status = pthread_create(&Produces[i], NULL, ProduceThreadFunc, val);
 		/* handle failure */
 		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
 	}
 		
-	/* for each index in consumers array */
+	/* for each index in Consumes array */
 	for (i = 0; i < NUM_CONSUMERS; ++i)
 	{
-		/* alloacte data */
 		status = -1;
 
 		/* create a thread */		
-		status = pthread_create(&consumers[i], NULL, ConsumeThreadFunc, NULL);
+		status = pthread_create(&Consumes[i], NULL, ConsumeThreadFunc, NULL);
 		/* handle failure */
 		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
 	}
@@ -86,39 +85,35 @@ int main()
 
 static void* ProduceThreadFunc(void* arg)
 {
-	int val = 0;
+	int val = (assert(NULL != arg), *(int*)arg);
 	int* data = NULL;
 	
-	/* assert */
-	assert(NULL != arg);
-	
-	val = *(int*)arg;
 	free(arg);
 	
 	/* while 1 */
 	while (1)
 	{
-		/* call Producer() */
-		data = Producer(val);
+		/* call Produce() */
+		data = Produce(val);
 		
 		/* lock the mutex */
 		pthread_mutex_lock(&list_mutex);
-		
+		TODO: handle failure		
 		/* push the value to the list */
 		DListPushBack(shared_list, data);
 		
-		/* increment the semaphore by 1 with sem_post() */
-		sem_post(&items_available);	
-			
 		/* unlock the mutex */
 		pthread_mutex_unlock(&list_mutex);		
+
+		/* increment the semaphore by 1 with sem_post() */
+		sem_post(&items_available);	
 	}
 	
 	/* return NULL */
 	return NULL;
 }
 
-static int* Producer(int val)
+static int* Produce(int val)
 {
 	int* data = NULL;
 
@@ -143,9 +138,13 @@ static void* ConsumeThreadFunc(void* arg)
 	{
 		/* wait for available items */
 		sem_wait(&items_available);
-			
+		TODO: handle failure
+		
 		/* lock the mutex */
 		pthread_mutex_lock(&list_mutex);
+		TODO: handle failure
+		
+		assert(!DListIsEmpty(shared_list));
 		
 		/* pop the value from the list */
 		data = (int*)DListGetData(DListBegin(shared_list));
@@ -156,8 +155,8 @@ static void* ConsumeThreadFunc(void* arg)
 		/* unlock the mutex */
 		pthread_mutex_unlock(&list_mutex);	
 		
-		/* call Consumer() */
-		Consumer(data);
+		/* call Consume() */
+		Consume(data);
 	}		
 	
 	/* return NULL */
@@ -166,7 +165,7 @@ static void* ConsumeThreadFunc(void* arg)
 	(void)arg;
 }
 
-static void Consumer(int* data)
+static void Consume(int* data)
 {
 	printf("consumed: %d\n", *data);
 

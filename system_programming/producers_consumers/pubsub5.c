@@ -20,18 +20,6 @@
 /**************************************define*************************************/
 enum { NUM_ROUNDS = 2, NUM_PRODUCERS = 3, NUM_CONSUMERS = 3, LIST_SIZE = 5 };
 
-typedef struct fsq
-{
-	int* array;
-	size_t capacity;
-	size_t read_idx;
-	size_t write_idx;
-	sem_t sem_free_space;
-	sem_t sem_used_sapce;
-	pthread_mutex_t enqueue_mutex;
-	pthread_mutex_t dequeue_mutex;
-} fsq_t;
-
 /********************************Private Functions********************************/
 static fsq_t* FSQCreate(size_t capacity);
 static void FSQDestroy(fsq_t* fsq);
@@ -83,28 +71,6 @@ int main()
 		status = pthread_create(&consumers[i], NULL, Consumer, id);
 		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
 	}
-	
-	/* join producers threads */
-	for (i = 0; i < NUM_PRODUCERS; ++i)
-	{
-		pthread_join(producers[i], NULL);
-	}
-	
-	/* join pconsumers threads */
-	for (i = 0; i < NUM_CONSUMERS; ++i)
-	{
-		pthread_join(consumers[i], NULL);
-	}
-		
-	/* destroy the list */
-	DListDestroy(shared_list);
-	
-	/* destroy the mutex */
-	pthread_mutex_destroy(&mutex);
-		
-	/* destroy the semaphores */
-	sem_destroy(&sem_free_space);
-	sem_destroy(&sem_used_space);
 	
 	return SUCCESS;
 }
