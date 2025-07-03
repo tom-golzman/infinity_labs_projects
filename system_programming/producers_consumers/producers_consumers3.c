@@ -43,6 +43,9 @@ int main()
 	/* handle failure */
 	ExitIfBad(NULL != shared_list, FAIL, "DListCreate() FAILED!");
 	
+	/* create a semaphore */
+	sem_init(&items_available, 0, 0);
+	
 	/* for each index in producers array */
 	for (i = 0; i < NUM_PRODUCERS; ++i)
 	{
@@ -64,13 +67,9 @@ int main()
 	{
 		/* alloacte data */
 		status = -1;
-		val = (int*)calloc(1, sizeof(int));
-		/* handle failure */
-		ExitIfBad(NULL != val, FAIL, "calloc() FAILED!\n");
-		*val = i + 10;
 
 		/* create a thread */		
-		status = pthread_create(&consumers[i], NULL, ConsumeThreadFunc, val);
+		status = pthread_create(&consumers[i], NULL, ConsumeThreadFunc, NULL);
 		/* handle failure */
 		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
 	}
