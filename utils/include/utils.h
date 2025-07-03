@@ -32,6 +32,29 @@ enum { FALSE = 0, TRUE = 1 };
 /************************************Functions************************************/
 /* systemcalls handling */
 void ExitIfBad(int is_good, int exit_stat, const char* msg);
+
 void Log(const char* message);
+
+/* return if bad macro */
+#define RET_IF_BAD(is_good, return_status, msg) do{ \
+    if(!(is_good)) \
+    { \
+		perror(msg); \
+		return (return_status); \
+    } \
+} while(0)
+
+/* return if bad with clean function macro */
+#define RET_IF_BAD_CLEAN(is_good, return_status, msg, cleanup_call)	do{ \
+	if(!(is_good)) \
+	{ \
+		perror(msg); \
+		cleanup_call; \
+		return (return_status); \
+	} \
+}while(0)
+
+/* macro for using RET_IF_BAD in voif functions */
+#define NOTHING
 
 #endif /* __UTILS_H__ */
