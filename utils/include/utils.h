@@ -1,6 +1,9 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+/************************************Includes************************************/
+#include <stdio.h> /* perror */
+
 /************************************Define************************************/
 /* trash memory before free */
 #define BAD_MEM32(T)  	((T)0xDEADBEEF)
@@ -54,7 +57,7 @@ void Log(const char* message);
 	} \
 }while(0)
 
-/* macro for using RET_IF_BAD in voif functions */
+/* macro for using RET_IF_BAD in void functions */
 #define NOTHING
 
 #endif /* __UTILS_H__ */
