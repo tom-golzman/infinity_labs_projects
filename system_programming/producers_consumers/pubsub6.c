@@ -60,6 +60,7 @@ int main()
 static void* ProduceThreadFunc(void* arg)
 {
 	int i = 0, j = 0;
+	int message = 0;
 
 	/* for each number of messages */
 	for (i = 0; i < NUM_MESSAGES; ++i)
@@ -67,11 +68,14 @@ static void* ProduceThreadFunc(void* arg)
 		/* reset consumers left */
 		g_consumers_left = NUM_CONSUMERS;
 	
-		/* produce a message */
-		g_message = Produce(i);
+		/* produce a message to a local variable*/
+		message = Produce(i);
 		
 		/* lock the mutex */
 		pthread_mutex_lock(&mutex);
+		
+		/* initialize the global message with the locl variable */
+		g_message = message;		
 		
 		/* for each number of consumers */
 		for (j = 0; j < NUM_CONSUMERS; ++j)

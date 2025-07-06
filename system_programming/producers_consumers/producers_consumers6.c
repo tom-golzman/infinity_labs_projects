@@ -47,9 +47,11 @@ static void* ProduceThreadFunc(void* arg)
 	/* for each number of messages */
 		/* reset consumers left */
 	
-		/* produce a message */
+		/* produce a message to a local variable*/
 		
 		/* lock the mutex */
+		
+		/* initialize the global message with the locl variable */
 		
 		/* for each number of consumers */
 			/* increment the semaphore  by 1 */
