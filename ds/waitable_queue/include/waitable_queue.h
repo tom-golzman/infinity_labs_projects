@@ -13,7 +13,7 @@ wq_t* WQCreate(size_t capacity);
 
 int WQDestroy(wq_t*);
 
-int WQEnqueue(wq_t*, int* value);
+int WQEnqueue(wq_t*, int value);
 
 int WQDequeue(wq_t*, int* output);
 

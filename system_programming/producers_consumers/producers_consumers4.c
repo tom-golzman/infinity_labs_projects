@@ -22,7 +22,7 @@ static wq_t* g_queue;
 /********************************Private Functions********************************/
 static void* ProduceThreadFunc(void* arg);
 static void* ConsumeThreadFunc(void* arg);
-static int* Produce(int val);
+static int Produce(int val);
 static void Consume(int* data);
 
 /************************************Functions************************************/
@@ -37,7 +37,7 @@ int main()
 
 	/* create a global waitable queue & handle failure */
 	g_queue = WQCreate(CAPACITY);
-	ExitIfBad(NULL != g_queue, FAIL, "WQCreate() Failed!");
+	ExitIfBad(NULL != g_queue, FAIL, "ps4 main: WQCreate() Failed!");
 	
 	/* for each index in producers array */
 	for (i = 0; i < NUM_PRODUCERS; ++i)
@@ -45,19 +45,19 @@ int main()
 		/* alloacte data */
 		val = (int*)calloc(1, sizeof(int));
 		/* handle failure */
-		ExitIfBad(NULL != val, FAIL, "calloc() FAILED!\n");
+		ExitIfBad(NULL != val, FAIL, "ps4 main: calloc() FAILED!\n");
 
 		*val = i;
 
 		/* create a thread & handle failure */
-		ExitIfBad(0 == pthread_create(&producers[i], NULL, ProduceThreadFunc, val), FAIL, "pthread_create() FAILED!\n");
+		ExitIfBad(0 == pthread_create(&producers[i], NULL, ProduceThreadFunc, val), FAIL, "ps4 main: pthread_create() FAILED!\n");
 	}
 		
 	/* for each index in consumers array */
 	for (i = 0; i < NUM_CONSUMERS; ++i)
 	{
 		/* create a thread & handle failure */
-		ExitIfBad(0 == pthread_create(&consumers[i], NULL, ConsumeThreadFunc, val), FAIL, "pthread_create() FAILED!\n");
+		ExitIfBad(0 == pthread_create(&consumers[i], NULL, ConsumeThreadFunc, NULL), FAIL, "ps4 main: pthread_create() FAILED!\n");
 	}
 	
 	/* while (1) */
@@ -72,7 +72,7 @@ int main()
 
 static void* ProduceThreadFunc(void* arg)
 {
-	int* value = NULL;
+	int value = 0;
 	int val = (assert(NULL != arg), *(int*)arg);
 	
 	free(arg);
@@ -84,42 +84,32 @@ static void* ProduceThreadFunc(void* arg)
 		value = Produce(val);
 		
 		/* enqueue value */
-		RET_IF_BAD_CLEAN(FALSE != WQEnqueue(g_queue, value), NULL, "WQEnqueue() FAILED!", WQDestroy(g_queue));
+		RET_IF_BAD_CLEAN(SUCCESS == WQEnqueue(g_queue, value), NULL, "ProduceThreadFunc: WQEnqueue() FAILED!", WQDestroy(g_queue));
 	}
 	
 	/* return NULL */
 	return NULL;
 }
 
-static int* Produce(int val)
+static int Produce(int val)
 {
-	int* value = NULL;
-
-	/* allocate the value */	
-	value = calloc(1, sizeof(int));
-	
-	/* handle failure */
-	RET_IF_BAD_CLEAN(NULL != value, NULL, "calloc() value FAILED!", WQDestroy(g_queue));
-
 	printf("produced: %d\n", val);
 
-	*value = val;
-	
-	return value;
+	return val;
 }
 
 static void* ConsumeThreadFunc(void* arg)
 {
-	int* value = 0;
+	int value = 0;
 	
 	/* while 1 */
 	while (1)
 	{
 		/* dequeue value */
-		RET_IF_BAD_CLEAN(FAIL != WQDequeue(g_queue, value), NULL, "WQDequeue() FAILED!", WQDestroy(g_queue));
+		RET_IF_BAD_CLEAN(SUCCESS == WQDequeue(g_queue, &value), NULL, "ConsumeThreadFunc: WQDequeue() FAILED!", WQDestroy(g_queue));
 		
 		/* call Consume() */
-		Consume(value);
+		Consume(&value);
 	}
 	
 	/* return NULL */
@@ -131,6 +121,4 @@ static void* ConsumeThreadFunc(void* arg)
 static void Consume(int* value)
 {
 	printf("consumed: %d\n", *value);
-
-	free(value);
 }
