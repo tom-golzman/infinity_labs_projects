@@ -18,8 +18,8 @@ enum { NUM_MESSAGES = 5, NUM_CONSUMERS = 3 };
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 static sem_t sem;
-static int g_message = 0;
-static int g_consumers_left = 0;
+static volatile int g_message = 0;
+static volatile int g_consumers_left = 0;
 
 /********************************Private Functions********************************/
 static void* ProduceThreadFunc(void* arg);
