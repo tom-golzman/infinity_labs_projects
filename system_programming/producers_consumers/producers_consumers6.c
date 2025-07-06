@@ -21,7 +21,6 @@ static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 static sem_t sem;
 static volatile int g_message = 0;
 static volatile int g_version = 0;
-static volatile int g_consumers_left = 0;
 
 /********************************Private Functions********************************/
 static void* ProduceThreadFunc(void* arg);
@@ -36,6 +35,9 @@ int main()
 	int* id = NULL;
 	pthread_t producer;
 	pthread_t consumers[NUM_CONSUMERS];
+	
+	/* create a semaphore */
+	sem_init(&sem, 0, 0);
 
 	/* create producer thread & consumers threads array */
 	ExitIfBad(0 == pthread_create(&producer, NULL, ProduceThreadFunc, NULL), FAIL, "main: pthread_create(producer) FAILED!");	
@@ -54,9 +56,6 @@ int main()
 		ExitIfBad(0 == pthread_create(&consumers[i], NULL, ConsumeThreadFunc, id), FAIL, "main: pthread_create(consumer) FAILED!\n");
 	}
 	
-	/* create a semaphore */
-	sem_init(&sem, 0, 0);
-	
 	/* while (1) */
 	while (1)
 	{
@@ -71,6 +70,7 @@ static void* ProduceThreadFunc(void* arg)
 {
 	int i = 0, j = 0;
 	int message = 0;
+	int status = 0;
 
 	/* for each number of messages */
 	for (i = 0; i < NUM_MESSAGES; ++i)
@@ -79,37 +79,27 @@ static void* ProduceThreadFunc(void* arg)
 		message = Produce(i);
 		
 		/* lock the mutex */
-		pthread_mutex_lock(&mutex);
-		
-		/* reset consumers left */
-		g_consumers_left = NUM_CONSUMERS;
+		status = pthread_mutex_lock(&mutex);
+		RET_IF_BAD(0 == status, NULL, "ProduceThreadFunc: pthread_mutex_lock(&mutex) FAILED!");
 		
 		/* update global message & global version */
 		g_message = message;		
 		++g_version;
 		
+		/* wake all the consumers */
+		status = pthread_cond_broadcast(&cond);
+		RET_IF_BAD(0 == status, NULL, "ProduceThreadFunc: pthread_cond_broadcast(&cond) FAILED!");
+		
 		/* unlock the mutex */
-		pthread_mutex_unlock(&mutex);
+		status = pthread_mutex_unlock(&mutex);
+		RET_IF_BAD(0 == status, NULL, "ProduceThreadFunc: pthread_mutex_unlock(&mutex) FAILED!");
 		
 		/* for each number of consumers */
 		for (j = 0; j < NUM_CONSUMERS; ++j)
 		{
-			/* increment the semaphore  by 1 */
-			sem_post(&sem);	
+			/* wait for semaphore */
+			sem_wait(&sem);
 		}
-		
-		/* lock the mutex again to wait for consumers to finish */
-		pthread_mutex_lock(&mutex);
-		
-		/* while there are consumers left */
-		while (g_consumers_left > 0)
-		{
-			/* wait for them */
-			pthread_cond_wait(&cond, &mutex);
-		}
-		
-		/* unlock the mutex */
-		pthread_mutex_unlock(&mutex);
 	}
 		
 	/* return NULL */
@@ -130,7 +120,7 @@ static void* ConsumeThreadFunc(void* arg)
 {
 	int message = 0;
 	int local_version = -1;
-	int should_signal = FALSE;
+	int status = 0;
 	int id = (assert(NULL != arg), *(int*)arg);
 	
 	free(arg);
@@ -138,49 +128,34 @@ static void* ConsumeThreadFunc(void* arg)
 	/* while (1) */
 	while (1)
 	{
-		/* wait for semaphore (until a message is ready) */
-		sem_wait(&sem);	
-			
 		/* lock the mutex */
-		pthread_mutex_lock(&mutex);
+		status = pthread_mutex_lock(&mutex);
+		RET_IF_BAD(0 == status, NULL, "ConsumeThreadFunc: pthread_mutex_lock(&mutex) FAILED!");
 		
 		/* while the message is NOT new */
 		while (local_version == g_version)
 		{
 			/* wait for the consition variable */
-			pthread_cond_wait(&cond, &mutex);
+			status = pthread_cond_wait(&cond, &mutex);
+			RET_IF_BAD(0 == status, NULL, "ConsumeThreadFunc: pthread_cond_wait(&cond, &mutex) FAILED!");			
 		}
 		
 		/* copy the version to a local variable */
 		local_version = g_version;
 		
+		/* unlock the mutex */
+		status = pthread_mutex_unlock(&mutex);
+		RET_IF_BAD(0 == status, NULL, "ConsumeThreadFunc: pthread_mutex_unlock(&mutex) FAILED!");
+		
 		/* copy the message to a local variable */
 		message = g_message;
-		
-		/* decrement number of consumers left */
-		--g_consumers_left;
-		
-		/* check if it is the last consumer */
-		if (0 == g_consumers_left)
-		{
-			should_signal = TRUE;
-		}
-		
-		/* unlock the mutex */
-		pthread_mutex_unlock(&mutex);
 
-		/* if it was the last consumer */
-		if (FALSE != should_signal)
-		{
-			/* send signal to the producer */
-			pthread_cond_signal(&cond);
-		
-			/* reset the flag */
-			should_signal = FALSE;
-		}
-		
 		/* consume the message */
 		Consume(id, message);
+		
+		/* increment the semaphore by 1 */
+		sem_post(&sem);
+		RET_IF_BAD(0 == status, NULL, "ConsumeThreadFunc: sem_post(&sem) FAILED!");		
 	}
 	
 	/* return NULL */
