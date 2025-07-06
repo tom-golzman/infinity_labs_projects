@@ -5,148 +5,143 @@
 **/
 
 /************************************includes*************************************/
-#include <assert.h>		/* assert() */
-#include <pthread.h>	/* pthread_t */
-#include <stdlib.h>		/* calloc(), free() */
-#include <semaphore.h>	/* sem_t */
+#include <assert.h>			/* assert() */
+#include <pthread.h>		/* pthread_t */
+#include <semaphore.h>		/* sem_t */
+#include <stdio.h>			/* printf */
 
-#include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
-
-#ifndef NDEBUG
-	#include <stdio.h>
-#endif
+#include "utils.h"			/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 
 /**************************************define*************************************/
-enum { NUM_ROUNDS = 3, NUM_PRODUCERS = 1, NUM_CONSUMERS = 3 };
+enum { NUM_MESSAGES = 5, NUM_CONSUMERS = 3 };
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 static sem_t sem;
-
-static int message = 0;
+static int g_message = 0;
+static int g_consumers_left = 0;
 
 /********************************Private Functions********************************/
-static void* Producer(void* arg);
-static void* Consumer(void* arg);
+static void* ProduceThreadFunc(void* arg);
+static void* ConsumeThreadFunc(void* arg);
+static int Produce(int message);
+static void Consume(int message);
 
 /************************************Functions************************************/
 int main()
 {
 	int i = 0;
-	int* id = NULL;
-	int status = -1;
-
-	/* create producer thread & consumers threads array */
 	pthread_t producer;
 	pthread_t consumers[NUM_CONSUMERS];
+
+	/* create producer thread & consumers threads array */
+	ExitIfBad(0 == pthread_create(&producer, NULL, ProduceThreadFunc, NULL), FAIL, "main: pthread_create(producer) FAILED!");	
+		
+	/* initialize consumers threads array */
+	for (i = 0; i < NUM_CONSUMERS; ++i)
+	{
+		/* create a thread & handle failure */
+		ExitIfBad(0 == pthread_create(&consumers[i], NULL, ConsumeThreadFunc, NULL), FAIL, "main: pthread_create(consumer) FAILED!\n");
+	}
 	
 	/* create a semaphore */
 	sem_init(&sem, 0, 0);
 	
-	/* initialize producer thread */
-	status = pthread_create(&producer, NULL, Producer, NULL);
-	ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
-	
-	/* initialize consumers arrays with ids and threads */
-	for (i = 0; i < NUM_CONSUMERS; ++i)
+	/* while (1) */
+	while (1)
 	{
-		status = -1;
-		id = (int*)calloc(1, sizeof(int));
-		ExitIfBad(NULL != id, FAIL, "calloc() FAILED!\n");
-		*id = i;
-		
-		status = pthread_create(&consumers[i], NULL, Consumer, id);
-		ExitIfBad(0 == status, FAIL, "pthread_create() FAILED!\n");
+		/* do nothing */
 	}
 	
-	/* join producer thread */
-	pthread_join(producer, NULL);
-	
-	/* join pconsumers threads */
-	for (i = 0; i < NUM_CONSUMERS; ++i)
-	{
-		pthread_join(consumers[i], NULL);
-	}
-	
-	/* destroy the semaphore */
-	sem_destroy(&sem);
-	
+	/* return SUCCESS */
 	return SUCCESS;
 }
 
-static void* Producer(void* arg)
+static void* ProduceThreadFunc(void* arg)
 {
-	int i = 0;
-	int j = 0;
-	int status = FAIL;
-	int consumers_left = 0;	
-	
-	/* for each number of rounds */
-	for (i = 1; i <= NUM_ROUNDS; ++i)
+	int i = 0, j = 0;
+
+	/* for each number of messages */
+	for (i = 0; i < NUM_MESSAGES; ++i)
 	{
+		/* reset consumers left */
+		g_consumers_left = NUM_CONSUMERS;
+	
+		/* produce a message */
+		g_message = Produce(i);
+		
 		/* lock the mutex */
 		pthread_mutex_lock(&mutex);
 		
-		/* update the message */
-		message = i + 10;
-		
-		/* wake up all the consumers */
+		/* for each number of consumers */
 		for (j = 0; j < NUM_CONSUMERS; ++j)
 		{
-			/* increment the semaphore by 1 */
-			sem_post(&sem);
+			/* increment the semaphore  by 1 */
+			sem_post(&sem);	
 		}
 		
-		/* get consumers left */
-		status = sem_getvalue(&sem, &consumers_left);
-		ExitIfBad(SUCCESS == status, FAIL, "sem_getvalue()!");
-		
-		DEBUG_ONLY(printf("consumers left: %d\n", consumers_left););		
-		
-		/* wait for all the comsumers to finish read the message */
-		while (consumers_left > 0)
+		/* while there are consumers left */
+		while (g_consumers_left > 0)
 		{
+			/* wait for them */
 			pthread_cond_wait(&cond, &mutex);
 		}
-		
-		DEBUG_ONLY(printf("producer: message number %d\n", message););
 		
 		/* unlock the mutex */
 		pthread_mutex_unlock(&mutex);
 	}
-	
+		
+	/* return NULL */
 	return NULL;
 	
 	(void)arg;
 }
 
-static void* Consumer(void* arg)
+static int Produce(int message)
 {
-	int id = 0;
+	DEBUG_ONLY(printf("produced: %d\n", message););	
+	
+	/* return the message */
+	return message;
+}
 
+static void* ConsumeThreadFunc(void* arg)
+{
+	int message = 0;
 	
-	assert(NULL != arg);
-	
-	/* save the arg (id) and free it */
-	id = *(int*)arg;
-	free(arg);
-	
+	/* while (1) */
 	while (1)
 	{
-		/* wait until the message is ready (semaphore is 1) */
-		sem_wait(&sem);
-
+		/* wait for semaphore (until a message is ready) */
+		sem_wait(&sem);	
+			
 		/* lock the mutex */
 		pthread_mutex_lock(&mutex);
 		
-		DEBUG_ONLY(printf("consumer num %d: message number %d\n",id, message););
+		/* copy the message to a local variable */
+		message = g_message;
 		
-		/* wake up the producer */
+		/* decrement number of consumers left */
+		--g_consumers_left;
+		
+		/* send signal to the producer */
 		pthread_cond_signal(&cond);
 		
 		/* unlock the mutex */
 		pthread_mutex_unlock(&mutex);
+		
+		/* consume the message */
+		Consume(message);
 	}
 	
+	/* return NULL */
 	return NULL;
+	
+	(void)arg;
+}
+
+static void Consume(int message)
+{
+	/* consume the message */
+	printf("consumed: %d\n", message);	
 }
