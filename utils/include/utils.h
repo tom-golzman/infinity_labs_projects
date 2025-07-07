@@ -32,6 +32,8 @@ enum { SUCCESS = 0, FAIL = 1 };
 /* boolean */
 enum { FALSE = 0, TRUE = 1 };
 
+enum { LOG_BUFF_SIZE = 100 };
+
 /************************************Functions************************************/
 /* systemcalls handling */
 void ExitIfBad(int is_good, int exit_stat, const char* msg);
