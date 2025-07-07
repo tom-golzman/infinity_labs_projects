@@ -43,7 +43,7 @@ void Log(const char* message);
     if(!(is_good)) \
     { \
 		perror(msg); \
-		return (return_status); \
+		return return_status; \
     } \
 } while(0)
 
@@ -53,7 +53,7 @@ void Log(const char* message);
 	{ \
 		perror(msg); \
 		cleanup_call; \
-		return (return_status); \
+		return return_status; \
 	} \
 }while(0)
 
