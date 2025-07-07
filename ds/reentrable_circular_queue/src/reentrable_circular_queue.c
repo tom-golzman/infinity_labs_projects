@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
-	Date: 07/07/2025
-	Reviewed By: 
+	Date: 06/07/2025
+	Reviewed By: Sami
 **/
 
 /************************************includes************************************/
@@ -16,12 +16,17 @@
 /************************************define************************************/
 struct reentrable_circular_queue
 {
+	size_t capacity;
+	
 	sem_t free_space_counter;
 	sem_t used_space_counter;
+	
 	pthread_mutex_t read_lock;
 	pthread_mutex_t write_lock;
+	
 	volatile const int* read_head;
 	volatile int* write_head;
+	
 	int queue[1];
 };
 
@@ -55,6 +60,9 @@ rcq_t* RCQCreate(size_t capacity)
 	rcq->read_head = rcq->queue;
 	rcq->write_head = rcq->queue;
 	
+	/* assign capacity in the struct */	
+	rcq->capacity = capacity;
+	
 	/* return the new rcq */
 	return rcq;
 }
@@ -74,11 +82,12 @@ void RCQDestroy(rcq_t* rcq)
 	RET_IF_BAD(0 == sem_destroy(&(rcq->free_space_counter)), NOTHING, "RCQDestroy: sem_destroy(free_space_counter) FAILED!");
 	RET_IF_BAD(0 == sem_destroy(&(rcq->used_space_counter)), NOTHING, "RCQDestroy: sem_destroy(used_space_counter) FAILED!");
 	
-	/* for debug - put BAD_MEM in the pointers */
+	/* for debug - put BAD_MEM in the strcut's fields */
 	DEBUG_ONLY
 	(
 		rcq->read_head = BAD_MEM(int*);
 		rcq->write_head = BAD_MEM(int*);
+		rcq->capacity = 0;
 	);
 	
 	/* free the rcq */
