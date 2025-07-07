@@ -97,8 +97,14 @@ static void* ProduceThreadFunc(void* arg)
 
 static int Produce(int val)
 {
-	printf("produced: %d\n", val);
-
+	int status = 0;
+	char log_buffer[LOG_BUFF_SIZE];
+	
+	status = sprintf(log_buffer, "produced: %d\n", val);
+	ExitIfBad(0 <= status, FAIL, "Produce: sprintf() FAILED!");
+	
+	Log(log_buffer);
+	
 	return val;
 }
 
@@ -126,5 +132,11 @@ static void* ConsumeThreadFunc(void* arg)
 
 static void Consume(int message)
 {
-	printf("consumed: %d\n", message);
+	int status = 0;
+	char log_buffer[LOG_BUFF_SIZE];
+	
+	status = sprintf(log_buffer, "   consumed: %d\n", message);
+	ExitIfBad(0 <= status, FAIL, "Consume: sprintf() FAILED!");
+	
+	Log(log_buffer);
 }
