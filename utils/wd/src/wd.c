@@ -15,55 +15,66 @@
 /************************************typedef************************************/
 
 /************************************Functions************************************/
-int MakeMeImmortal(int who_am_i_, const char* path)
+int MakeMeImmortal(int who_am_i_, const char* path_)
 {
-	/* if client */
-		/* fork() */
-		
-		/* child */
-			/* execv() for wd_client */
-		
-		/* parent */
-			/* call InitScheduler() */
-			
-			/* create a thread */
-		
-	/* if wd */
-		/* call InitScheduler() */
-
-		/* create a thread */
+	/* mask SIGUSR1 + 2 */
 	
-	/* return NULL */
+	/* set signal handlers */
+	
+	/* create thread */
 }
 
-static void* ImmortalThreadFunc(void* arg)
+ThreadFunc()
 {
-	/* run scheduler */
+	/* unmask SIGUSR1 + 2 */
 	
-	/* return NULL */
+	/* create wd process */
+	
+	/* wait for first signal */
+	
+	/* create client scheduler */
+	
+	/* run client scheduler */
 }
 
-static sched_t* InitScheduler()
+CreateWDProcess()
+{
+	/* fork */
+		/* if parent */
+			/* return */
+		
+		/* if child */
+			/* execv() */
+}
+
+CreateClientScheduler()
 {
 	/* create scheduler */
 	
-	/* create tasks */
-	/* create task - send signal */
-	/* create task - check the counter */
-	/* add tasks to the scheduler */
+	/* init scheduler */
 	
 	/* return scheduler */
 }
 
-CheckCounterTask()
+InitClientScheduler()
 {
-	/* if counter is smaller or equal to N */
-		/* return */
-
-	/* if client */
-		/* clear all tasks */	
-		/* create task - run MakeMeImmortal() */
-		/* add task to the scheduler */
+	/* add task - send signal */
+	/* add task - increase counter */
+	/* add task - check counter */
 	
-	/* return */
+	/* return status */
+}
+
+Revive()
+{
+	/* clear scheduler */
+	
+	/* kill wd process */
+	
+	/* add task - create process */
+	/* add task - wait for first signal */
+	
+	/* init client scheduler */
+
+	/* return status */
 }
