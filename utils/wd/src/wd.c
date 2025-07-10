@@ -22,6 +22,10 @@ int MakeMeImmortal(int who_am_i_, const char* path_)
 	/* set signal handlers */
 	
 	/* create thread */
+	
+	/* wait for an indication all is good or all is lost */
+	
+	/* return status */
 }
 
 ThreadFunc()
@@ -67,14 +71,10 @@ InitClientScheduler()
 
 Revive()
 {
-	/* clear scheduler */
-	
 	/* kill wd process */
 	
-	/* add task - create process */
-	/* add task - wait for first signal */
+	/* create process */
+	/* wait for first signal */
 	
-	/* init client scheduler */
-
 	/* return status */
 }
