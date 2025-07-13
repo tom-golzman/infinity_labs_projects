@@ -4,35 +4,32 @@
 	Reviewed By: 
 **/
 
-/************************************includes************************************/
+/************************************ includes ************************************/
 #include <assert.h> /* assert() */
 
 #include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 #include "wd.h"
 
-/************************************define************************************/
-enum { CLIENT = 0, WD = 1 , MAX_REVIVES = 3};
+/************************************ defines************************************/
+enum { CLIENT = 0, WD = 1, MAX_REVIVES = 3};
 
 typedef struct watchdog
 {
-	int sig1_counter[2];
-	
-	int sig1_received[2];
-	
-	int dnr_received[2];
-	
-	int count_revives[2];
-
-	pid_t pid_client;
-	pid_t pid_wd;
-	
-	/* int current_role ??? or known by argv[1] */
+	int argc;
+	char* argv[];
+	int revive_counter;
+	sched_t* scheduler;
+	char* wd_exec_path;
+	pid_t other_process_pid;
 } wd_t;
 
-/************************************Functions************************************/
-int MakeMeImmortal(int who_am_i_, const char* path_)
+static volatile sig_atomic_t g_counter = 1;
+static int g_is_dnr_received = FALSE;
+
+/************************************ Functions ************************************/
+int MakeMeImmortal(int argc, char* argv[])
 {
-	/* mask SIGUSR1 + 2 */
+	/* mask signals */
 	
 	/* create thread */
 	
@@ -41,31 +38,17 @@ int MakeMeImmortal(int who_am_i_, const char* path_)
 	/* return status */
 }
 
-ThreadFunc()
+void* ThreadFunc(void* arg)
 {
 	/* set signal handlers */
 	
-	/* unmask SIGUSR1 + 2 */
+	/* unmask signals */
 	
 	/* create wd process */
-	
-	/* wait for first signal */
-	
 	/* create client scheduler */
-
 	/* init client scheduler */
-		
-	/* run client scheduler */
-}
-
-CreateWDProcess()
-{
-	/* fork */
-		/* if parent */
-			/* return */
-		
-		/* if child */
-			/* execv() */
+	
+	/* run scheduler */
 }
 
 int SetSignalHandlers()
@@ -75,165 +58,174 @@ int SetSignalHandlers()
 	/* return status */
 }
 
-/************************************Client Functions************************************/
-int InitSchedulerClient(sched_t* scheduler)
+/******************************** phase 1 (init) functions ********************************/
+int InitTasks(wd_t* wd)
+{
+	/* add task - increment counter */
+	/* add task - check counter */
+}
+
+/******************************** phase 2 (mainstream) functions ********************************/
+int MainstreamTasks(wd_t* wd)
 {
 	/* add task - send signal */
 	/* add task - increment counter */
-	/* add task - check counter */
-	/* add task - check SIGUSR2 flag */
+	/* add task - check counter client */
+	/* add task - check DNR */
 	
 	/* return status */
 }
 
-int SendSignalClient(void* arg) /* struct with pid and signal ? */
+/******************************** functions ********************************/
+int InitSchedulerClient(sched_t* scheduler)
+{
+	/* phase 1: init */
+		/* add task - increment counter */
+		/* add task - check counter */
+		
+	/* phase 2: mainstream */
+	/* add task - init mainstream tasks (send signal, increment counter, check counter, check SIGUSR2 flag */
+	
+	/* return status */
+}
+
+int CreateWDProcess(wd_t* wd)
+{
+	/* fork & handle failure */
+	
+		/* if parent */
+			/* return SUCCESS */
+		
+		/* if child */
+			/* update WD_PID in env */
+			
+			/* init argv[0] with wd_exec_path */
+			/* init argv[1] with "wd" */
+			
+			/* execv() & handle failure */
+}
+
+void DNR()
+{
+	/* change global glaf of DNR to TRUE */
+}
+
+/******************************** tasks ********************************/
+int CheckFirstSignalTask(void* arg) /* wd_t* */
 {
 	/* assert */
+	
+	/* if g_counter is zero */
+		
+		/* clear the scheduler */
+		
+		/* call MainstreamTasks() */
+		
+		/* return SUCCESS */
+	
+	/* print to log */
+	
+	/* stop scheduler and cleanup */
+	
+	/* return FAIL */
+}
+
+int SendSignalClientTask(void* arg)
+{
+	/* get WD_PID from env */
 	
 	/* send signal to WD*/
 	
 	/* return TO_RESCHEDULE */
 }
 
-int IncrementCounterClient(void* arg)
+int IncrementCounterClientTask(void* arg)
 {
-	/* assert ? */
-	
-	/* if signal flag is TRUE */
-		
-		/* increment counter */
-		
-		/* reset flag */
+	/* increment g_counter */
 	
 	/* return TO_RESCHEDULE */
 }
 
-int CheckCounterClient(void* arg)
-{
-	/* assert ? */
-	
-	/* if counter is above N */
-
-		/* increase revive counter in the struct */
-		
-		/* call revive client */
-		
-		/* handle failure: stop scheduler and return NOT_RESCHEDULE */
-	
-	/* return TO_RESCHEDULE */
-}
-
-int CheckDNRClient(void* arg)
-{
-	/* send SIGUSR2 to WD ? */
-}
-
-int ReviveClient(void* arg) /* wd_t* */
+int CheckCounterClientTask(void* arg) /* wd_t* */
 {
 	/* assert */
 	
-	/* kill wd process */
-	
-	/* create wd process */
-	
-	/* update pid_client in the struct */
-
-	/* reset sig1_counter in the struct */
-
-	/* reset received flag in the struct */
-	
-	/* wait for first signal */
-	
-	/* return status */
-}
-
-/************************************Watchdog Functions************************************/
-int InitSchedulerWD(sched_t* scheduler)
-{
-	/* add task - send signal */
-	/* add task - increment counter */
-	/* add task - check counter */
-	/* add task - check SIGUSR2 flag */
-	
-	/* return status */
-}
-
-int SendSignalWD(void* arg) /* struct with pid and signal ? */
-{
-	/* assert */
-	
-	/* send signal to Client */
-	
-	/* return TO_RESCHEDULE */
-}
-
-int IncrementCounterWD(void* arg)
-{
-	/* assert ? */
-	
-	/* if signal flag is TRUE */
-		
-		/* increment counter */
-		
-		/* reset flag */
-	
-	/* return TO_RESCHEDULE */
-}
-
-int CheckCounterWD(void* arg)
-{
-	/* assert ? */
-	
 	/* if counter is above N */
+
+		/* if revive counter is equal or bigger to MAX_REVIVES */
+
+			/* log */
+			
+			/* stop scheduler and cleanup */
+			
+			/* return NOT_RESCHEDULE */
 		
+					
 		/* increase revive counter in the struct */
 		
 		/* call revive wd */
 		
-		/* handle failure: stop scheduler and return NOT_RESCHEDULE */
+		/* handle failure: stop scheduler, cleanup and return NOT_RESCHEDULE */
 	
+		/* reset g_counter */
+		
 	/* return TO_RESCHEDULE */
 }
 
-int CheckDNRWD(void* arg) /* wd_t* */
+int CheckDNRTask(void* arg)
 {
-	/* assert */
-	
-	/* if dnr flag is TRUE */
+	/* if received dnr */
 		
-		/* stop scheduler */
+		/* stop scheduler and cleanup */
+		
+		/* log */
 		
 		/* return NOT_RESCHEDULE */
-	
+		
 	/* return TO_RESCHEDULE */
 }
 
-int ReviveWD(void* arg) /* wd_t* */
+int ReviveWDTask(void* arg) /* wd_t* */
 {
 	/* assert */
 	
-	/* kill wd process */
-	
-	/* create wd process */
-	
-	/* update pid_wd in the struct */
-	
-	/* reset sig1_counter in the struct */
-
-	/* reset received flag in the struct */
+	/* kill wd process: */
+		/* get WD_PID from env */
+		/* call kill() */
 		
-	/* wait for first signal */
+	/* create new wd process */
 	
-	/* return status */
+	/* reset g_counter */
+	
+	/* add task - wait first signal */
+
+	/* reset revive counter */
+	
+	/* return SUCCESS */
 }
 
-/************************************Signal Handlers************************************/
+
+int WaitFirstSignalTask(wd_t* wd)
+{
+	/* assert */
+	
+	/* if g_counter is zero */
+		
+		/* remove this task */
+		
+		/* call reset revive counter */
+		
+		/* return SUCCESS */
+	
+	/* print to log */
+	
+	/* stop scheduler and cleanup */
+	
+	/* return FAIL */
+}
+
+/************************************ Signal Handler ************************************/
 void HandleSIGUSR1(int sig)
 {
-	/* update sig1_recieved flag */
-}
-
-void HandleDNR(int sig)
-{
-	/* update dnr_recieved flag */
+	/* reset g_counter */
 }
