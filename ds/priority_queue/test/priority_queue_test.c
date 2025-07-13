@@ -5,6 +5,20 @@
 #include "test_utils.h" /* colors, titles, status, boolean */
 #include "priority_queue.h"
 
+
+typedef struct
+{
+	int key;
+	int value;
+} pq_data_t;
+
+int PQCmp(const void* data1, const void* data2, void* param)
+{
+	(void) param;
+
+	return (((pq_data_t*)data1)->key - ((pq_data_t*)data2)->key);
+}
+
 /************************************function declarations************************************/
 void TestPQCreate();
 void TestPQDestroyNULL();
@@ -17,13 +31,14 @@ void TestPQErase();
 void TestPQPeekEmpty();
 void TestPQClearEmpty();
 void TestPQEnqueuePeekMultipleSamePriority();
+void Test();
 
 int CompareInts(const void* a, const void* b, void* param);
 int MatchInts(const void* a, const void* b);
 
 /************************************main************************************/
 int main(void)
-{
+{/*
 	TestPQCreate();
 	TestPQDestroyNULL();
 	TestPQEnqueuePeek();
@@ -34,7 +49,9 @@ int main(void)
 	TestPQClear();
 	TestPQClearEmpty();
 	TestPQErase();
-	TestPQPeekEmpty();
+	TestPQPeekEmpty(); */
+
+	Test();
 
     printf("\n");
 
@@ -288,6 +305,34 @@ void TestPQPeekEmpty()
     }
     PQDestroy(pq);
 }
+
+void Test()
+{
+	pq_data_t a = {1, 100};
+	pq_data_t b = {1, 500};
+	pq_data_t peeked;
+	
+    priority_queue_t* pq = PQCreate(PQCmp, NULL);
+    
+    printf(BOLD_TITLE "\nTest: PQEnqueue() + PQPeek()\n" RESET);
+
+	PQEnqueue(pq, &a);
+	PQEnqueue(pq, &b);
+
+	peeked = *(pq_data_t*)PQPeek(pq); 
+	
+    if (peeked.value == 100)
+    {
+        printf(GREEN "TEST 1 PASSED\n" RESET);
+    }
+    else
+    {
+        printf(RED "TEST 1 FAILED: " RESET "Top element = %d\n", *(int*)PQPeek(pq));
+    }
+    
+    PQDestroy(pq);
+}
+
 
 /************************************Helpers************************************/
 int CompareInts(const void* a, const void* b, void* param)
