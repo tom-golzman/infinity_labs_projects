@@ -83,7 +83,6 @@ ilrd_uid_t SchedAddTask(sched_t* scheduler, time_t execution_time, sched_action_
 	
 	assert(NULL != scheduler);
 	assert(NULL != action);
-	assert(NULL != cleanup);
 	
 	task = TaskCreate(execution_time, action, action_param, cleanup, cleanup_param, interval);
 	if (NULL == task)
