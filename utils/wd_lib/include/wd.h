@@ -9,5 +9,6 @@
 
 /************************************Functions************************************/
 void* MakeMeImmortal(void* arg);
+void DNR();
 
 #endif /*__ILRD_WD_H__*/

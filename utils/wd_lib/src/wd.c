@@ -8,6 +8,8 @@
 #include <assert.h> /* assert() */
 
 #include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
+
+#include "scheduler.h"
 #include "wd.h"
 
 /************************************ defines************************************/
@@ -16,7 +18,7 @@ enum { CLIENT = 0, WD = 1, MAX_REVIVES = 3};
 typedef struct watchdog
 {
 	int argc;
-	const char* argv[];
+	const char** argv;
 	int max_misses;
 	unsigned long interval;
 	int revive_counter;
@@ -37,7 +39,8 @@ int MakeMeImmortal(int argc, char* argv[])
 	
 	/* wait for an indication all is good or all is lost */
 	
-	/* return status */
+	/* return SUCCESS */
+	return SUCCESS;
 }
 
 void* ThreadFunc(void* arg)
@@ -78,7 +81,7 @@ int MainstreamTasks(wd_t* wd)
 }
 
 /******************************** functions ********************************/
-int InitSchedulerClient(sched_t* scheduler)
+int InitSchedulerClient(wd_t* wd)
 {
 	/* phase 1: init */
 		/* add task - check counter */
