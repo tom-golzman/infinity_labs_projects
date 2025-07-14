@@ -12,6 +12,8 @@
 /************************************typedef************************************/
 typedef struct scheduler sched_t;
 
+enum { NOT_RESCHEDULE = 0, TO_RESCHEDULE = 1 };
+
 typedef enum {
 	INTERNAL_ERROR = -1,
 	STOPPED_DEFAULT,
