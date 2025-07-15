@@ -83,7 +83,9 @@ static void InitStruct(wd_t* wd, int argc, const char* argv[])
 	wd->interval = interval;
 	wd->revive_counter = 0;
 	wd->client_exec_path = argv[3];
+	
 	wd->other_process_pid = getppid();
+	ExitIfBad(wd->other_process_pid != 1, FAIL, "InitStruct(): ppid = 1\n");
 	
 	wd->scheduler = SchedCreate();
 	ExitIfBad(NULL != wd->scheduler, FAIL, "InitStruct(): SchedCreate() FAILED!\n");
@@ -116,7 +118,7 @@ static int SendSignalTaskWD(void* arg)
 	
 	/* send signal to client */
 	status = kill(wd->other_process_pid, SIGUSR1);
-	ExitIfBad(0 == status, FAIL, "SendSignalTaskWD(): kill() FAILED!\n");
+	LOG_IF_BAD(0 == status, "SendSignalTaskWD(): kill() FAILED!\n");
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
