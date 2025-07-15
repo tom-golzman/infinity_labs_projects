@@ -26,18 +26,19 @@ typedef struct watchdog
 	unsigned long interval;
 	int revive_counter;
 	sched_t* scheduler;
-	const char* wd_exec_path;
-	pid_t other_process_pid;
+	const char* client_exec_path;
+	pid_t other_process_pid; /* client pid */
 } wd_t;
 
 static volatile sig_atomic_t g_counter = 1;
 
 /******************************* private functions *****************************/
-static int InitSchedulerWD(wd_t* wd);
-static int SendSignalWD(void* arg);
-static int CheckCounterWD(void* arg);
-static int ReviveClient(void* arg);
-static int SetSignalHandlers();
+static void InitStruct(wd_t* wd, int argc, const char* argv[]);
+static void InitSchedulerWD(wd_t* wd);
+static int SendSignalTaskWD(void* arg);
+static int CheckCounterTaskWD(void* arg);
+static void ReviveClient(void* arg);
+static void SetSignalHandlers();
 static void HandleSIGUSR1(int sig);
 
 /************************************ main ************************************/
@@ -45,33 +46,50 @@ int main(int argc, const char* argv[])
 {
 	/* create wd_t struct */
 	wd_t wd;
-		
+	
+	/* assert */
+	assert(argc >= 4);
+	
 	/* set signal handlers */
 	SetSignalHandlers();
 	
 	/* initialize struct fields */
-	wd.argc = argc;
-	wd.argv = argv;
-	wd.max_misses = MAX_MISSES;
-	wd.interval = INTERVAL;
-	wd.revive_counter = 0;
-	wd.wd_exec_path = argv[0];
-	wd.other_process_pid = getppid();
-	
-	wd.scheduler = SchedCreate();
-	ExitIfBad(NULL != wd.scheduler, FAIL, "wd_launch main: SchedCreate() FAILED!\n");
+	InitStruct(&wd, argc, argv);
 		
 	/* init wd scheduler */
 	InitSchedulerWD(&wd);
 	
 	/* run scheduler */
-	SchedRun(wd.scheduler);
-	
-	return SUCCESS;
+	return SchedRun(wd.scheduler);
 }
 
 /************************************ Functions ************************************/
-static int InitSchedulerWD(wd_t* wd)
+static void InitStruct(wd_t* wd, int argc, const char* argv[])
+{
+	int max_misses = atoi(argv[1]);
+	unsigned long interval = (unsigned long)atoi(argv[2]);
+	
+	ExitIfBad(0 != max_misses, FAIL, "InitStruct(): atoi(argv[1]) FAILED!\n");
+	ExitIfBad(0 != interval, FAIL, "InitStruct(): atoi(argv[2]) FAILED!\n");
+	
+	/* assert */
+	assert(NULL != wd);
+	assert(argc >= 4);
+		
+	/* initialize struct fields */
+	wd->argc = argc - 4;
+	wd->argv = &argv[4];
+	wd->max_misses = max_misses;
+	wd->interval = interval;
+	wd->revive_counter = 0;
+	wd->client_exec_path = argv[3];
+	wd->other_process_pid = getppid();
+	
+	wd->scheduler = SchedCreate();
+	ExitIfBad(NULL != wd->scheduler, FAIL, "InitStruct(): SchedCreate() FAILED!\n");
+}
+
+static void InitSchedulerWD(wd_t* wd)
 {
 	ilrd_uid_t task_uid = invalid_uid;
 	time_t now = -1;
@@ -83,36 +101,33 @@ static int InitSchedulerWD(wd_t* wd)
 	ExitIfBad(-1 != now, FAIL, "InitSchedulerWD(): time() FAILED!\n");
 	
 	/* add task - send signal */
-	task_uid = SchedAddTask(wd->scheduler, now + wd->interval, SendSignalWD, (void*)wd, NULL, NULL, wd->interval);
+	task_uid = SchedAddTask(wd->scheduler, now + wd->interval, SendSignalTaskWD, (void*)wd, NULL, NULL, wd->interval);
 	ExitIfBad(!UIDIsSame(task_uid, invalid_uid), FAIL, "InitSchedulerWD(): AddTask(SendSignal) FAILED!\n");
 	
 	/* add task - check counter */
-	task_uid = SchedAddTask(wd->scheduler, now + wd->interval, CheckCounterWD, (void*)wd, NULL, NULL, wd->interval);
+	task_uid = SchedAddTask(wd->scheduler, now + wd->interval, CheckCounterTaskWD, (void*)wd, NULL, NULL, wd->interval);
 	ExitIfBad(!UIDIsSame(task_uid, invalid_uid), FAIL, "InitSchedulerWD(): AddTask(CheckCounter) FAILED!\n");
-	
-	/* return SUCCESS */
-	return SUCCESS;
 }
 
-static int SendSignalWD(void* arg)
+static int SendSignalTaskWD(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	int status = FAIL;
 	
 	/* send signal to client */
 	status = kill(wd->other_process_pid, SIGUSR1);
-	ExitIfBad(0 == status, FAIL, "SendSignalWD(): kill() FAILED!\n");
+	ExitIfBad(0 == status, FAIL, "SendSignalTaskWD(): kill() FAILED!\n");
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
 }
 
-static int CheckCounterWD(void* arg) /* wd_t* */
+static int CheckCounterTaskWD(void* arg) /* wd_t* */
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	
 	/* increment g_counter */
-	__atomic_add_fetch(&g_counter, 1, __ATOMIC_SEQ_CST);
+	++g_counter;
 	
 	/* if counter is above N */
 	if (g_counter > wd->max_misses)
@@ -121,7 +136,7 @@ static int CheckCounterWD(void* arg) /* wd_t* */
 		if (wd->revive_counter >= MAX_REVIVES)
 		{
 			/* write to log */
-			Log("CheckCounterWD(): Client didn't respond - exiting\n");
+			Log("CheckCounterTaskWD(): Client didn't respond - exiting\n");
 			
 			/* stop scheduler and cleanup  */
 			SchedStop(wd->scheduler);
@@ -134,33 +149,33 @@ static int CheckCounterWD(void* arg) /* wd_t* */
 		++wd->revive_counter;
 		
 		/* call revive client */
-		return ReviveClient(wd);
+		ReviveClient(wd);
 	}
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
 }
 
-static int ReviveClient(void* arg) /* wd_t* */
+static void ReviveClient(void* arg) /* wd_t* */
 {
+	int status = -1;
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 
 	/* kill client process */
-	kill(wd->other_process_pid, SIGKILL);
+	status = kill(wd->other_process_pid, SIGTERM);
+	ExitIfBad(0 == status, FAIL, "ReviveClient(): kill() FAILED!\n");
+	/* TODO: check errno and send SIGSTOP if failed */
 	
 	/* execv() */
-	execv(wd->wd_exec_path, (char* const*)(wd->argv));
+	execv(wd->client_exec_path, (char* const*)(wd->argv));
 	
 	/* if execv returns - failed */
 	/* log */
 	Log("ReviveClient(): execv() FAILED!\n");
-
-	/* return FAIL */
-	return FAIL;
 }
 
 /************************************ Signal Handler ************************************/
-static int SetSignalHandlers()
+static void SetSignalHandlers()
 {
 	struct sigaction sa;
 	int status = 0;
@@ -173,9 +188,6 @@ static int SetSignalHandlers()
 	status = sigaction(SIGUSR1, &sa, NULL);
 	
 	ExitIfBad(0 == status, FAIL, "SetSignalHandlers(): sigaction() FAILED!\n");
-	
-	/* return SUCCESS */
-	return SUCCESS;
 }
 
 static void HandleSIGUSR1(int sig)
@@ -184,5 +196,5 @@ static void HandleSIGUSR1(int sig)
 	assert(sig == SIGUSR1);
 	
 	/* reset g_counter */
-	__atomic_store_n(&g_counter, 0, __ATOMIC_SEQ_CST);
+	g_counter = 0;
 }
