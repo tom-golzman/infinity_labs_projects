@@ -88,12 +88,12 @@ static void HandleSIGUSR1(int sig);
 /************************************ Functions ************************************/
 int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path)
 {
-	pthread_t thread_id;
+	pthread_t thread_id = {0};
 	mmi_data_t* mmi_data = NULL;
 	int status = 0;
 	volatile int is_first_signal_received = FALSE;
 	int sem_timeout_sec = max_misses * interval;
-	sem_t* sem = NULL;
+	sem_t sem = {0};
 	
 	/* assert */
 	assert(max_misses > 0);
@@ -105,23 +105,23 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	RET_IF_BAD(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): MaskSignals() FAILED!\n");
 	
 	/* allocate memory for mmi_data struct */
-	mmi_data = (mmi_data_t*)calloc(1, sizeof(mmi_data));
+	mmi_data = (mmi_data_t*)calloc(1, sizeof(mmi_data_t));
 	RET_IF_BAD(NULL != mmi_data, FAIL, "wd.c-> MakeMeImmortal(): calloc(mmi_data) FAILED!\n");
 	
 	/* initialize struct to pass arguments to the thread function */
-	status = InitMMIDataStruct(mmi_data, argc, argv, max_misses, interval, wd_exec_path, &is_first_signal_received, sem);
+	status = InitMMIDataStruct(mmi_data, argc, argv, max_misses, interval, wd_exec_path, &is_first_signal_received, &sem);
 	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): InitMMIDataStruct() FAILED!\n", DestroyMMI(mmi_data));
-		
+	
 	/* create thread */
-	status = pthread_create(&thread_id, NULL, ThreadFunc, &mmi_data);
+	status = pthread_create(&thread_id, NULL, ThreadFunc, mmi_data);
 	RET_IF_BAD_CLEAN(0 == status, FAIL, "wd.c-> MakeMeImmortal(): pthread_create() FAILED!\n", DestroyMMI(mmi_data));
-		
+	
 	/* wait for semaphore */
-	status = SemWaitWithTimeout(sem, sem_timeout_sec);
-	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> SemWaitWithTimeout(): sem_wait() FAILED!\n", DestroySemaphore(sem));
+	status = SemWaitWithTimeout(&sem, sem_timeout_sec);
+	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> SemWaitWithTimeout(): sem_wait() FAILED!\n", DestroySemaphore(&sem));
 	
 	/* destroy semaphore */
-	DestroySemaphore(sem);
+	DestroySemaphore(&sem);
 	
 	/* return thread status */
 	if (is_first_signal_received)
@@ -132,37 +132,6 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	
 	/* return FAIL */
 	return FAIL;
-}
-
-static int SemWaitWithTimeout(sem_t* sem, int timeout_sec)
-{
-	struct timespec ts;
-	int status = 0;
-	
-	/* assign current time into ts struct */
-	clock_gettime(CLOCK_REALTIME, &ts);
-	
-	/* add to wait time the timeout */
-	ts.tv_sec += timeout_sec;
-	
-	/* wait the timeout */
-	status = sem_timedwait(sem, &ts);
-	
-	/* handle failure */
-	if (-1 == status)
-	{
-		/* if reached timeout */
-		RET_IF_BAD(ETIMEDOUT == errno, FAIL, "wd.c-> SemWaitWithTimeout(): reached timeout\n");
-		
-		/* failed for other reason */
-		Log("wd.c-> SemWaitWithTimeout(): sem_timedwait() FAILED!\n");
-		
-		/* return FAIL */
-		return FAIL;
-	}
-	
-	/* return SUCCESS */
-	return SUCCESS;
 }
 
 void DNR()
@@ -473,6 +442,37 @@ static int ReviveWD(wd_t* wd)
 	/* go to revival phase */
 	status = AddRevivalTasks(wd);
 	RET_IF_BAD(FAIL != status, FAIL, "wd.c-> ReviveWD(): AddRevivalTasks() FAILED!\n");
+	
+	/* return SUCCESS */
+	return SUCCESS;
+}
+
+static int SemWaitWithTimeout(sem_t* sem, int timeout_sec)
+{
+	struct timespec ts;
+	int status = 0;
+	
+	/* assign current time into ts struct */
+	clock_gettime(CLOCK_REALTIME, &ts);
+	
+	/* add to wait time the timeout */
+	ts.tv_sec += timeout_sec;
+	
+	/* wait the timeout */
+	status = sem_timedwait(sem, &ts);
+	
+	/* handle failure */
+	if (-1 == status)
+	{
+		/* if reached timeout */
+		RET_IF_BAD(ETIMEDOUT == errno, FAIL, "wd.c-> SemWaitWithTimeout(): reached timeout\n");
+		
+		/* failed for other reason */
+		Log("wd.c-> SemWaitWithTimeout(): sem_timedwait() FAILED!\n");
+		
+		/* return FAIL */
+		return FAIL;
+	}
 	
 	/* return SUCCESS */
 	return SUCCESS;
