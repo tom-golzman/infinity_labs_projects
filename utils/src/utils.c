@@ -35,6 +35,8 @@ char* StrDup(const char* str)
 	size_t len = strlen(str) + 1; /* +1 for '\0' */
 	char* dup = (char*)malloc(len * sizeof(char)); 
 	
+	RET_IF_BAD(NULL != dup, NULL, "StrDup(): malloc() FAILED!\n");
+	
 	assert(str != NULL);
 	assert(dup != NULL);
 	

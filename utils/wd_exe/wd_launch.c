@@ -3,6 +3,7 @@
 	Date: 09/07/2025
 	Reviewed By: 
 **/
+
 /*********************************** includes ***********************************/
 #define _POSIX_C_SOURCE 200112L
 #include <signal.h>	/* sigaction, sig_atomic_t */
@@ -16,7 +17,7 @@
 #include "scheduler.h"
 
 /*********************************** defines ***********************************/
-enum { MAX_MISSES = 5, INTERVAL = 1, MAX_REVIVES = 3 };
+enum { MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PPID_IDX = 3, CLIENT_PATH_IDX = 4, MIN_ARGC = 5,  MAX_REVIVES = 3 };
 
 typedef struct watchdog
 {
@@ -48,7 +49,7 @@ int main(int argc, char* argv[])
 	wd_t wd;
 	
 	/* assert */
-	assert(argc >= 5);
+	assert(argc >= MIN_ARGC);
 	
 	/* set signal handlers */
 	SetSignalHandlers();
@@ -66,15 +67,17 @@ int main(int argc, char* argv[])
 /************************************ Functions ************************************/
 static void InitStruct(wd_t* wd, int argc, char* argv[])
 {
-	int max_misses = atoi(argv[1]);
-	unsigned long interval = (unsigned long)atoi(argv[2]);
+	int max_misses = atoi(argv[MAX_MISSES_IDX]);
+	unsigned long interval = (unsigned long)atoi(argv[INTERVAL_IDX]);
+	pid_t other_process_pid = (pid_t)atoi(argv[PPID_IDX]);
 	
-	ExitIfBad(0 != max_misses, FAIL, "wd_launch.c-> InitStruct(): atoi(argv[1]) FAILED!\n");
-	ExitIfBad(0 != interval, FAIL, "wd_launch.c-> InitStruct(): atoi(argv[2]) FAILED!\n");
-	
+	ExitIfBad(0 != max_misses, FAIL, "wd_launch.c-> InitStruct(): atoi(max_misses) FAILED!\n");
+	ExitIfBad(0 != interval, FAIL, "wd_launch.c-> InitStruct(): atoi(interval) FAILED!\n");
+	ExitIfBad(0 != other_process_pid, FAIL, "wd_launch.c-> InitStruct(): atoi(other_process_pid) FAILED!\n");
+		
 	/* assert */
 	assert(NULL != wd);
-	assert(argc >= 5);
+	assert(argc >= MIN_ARGC);
 		
 	/* initialize struct fields */
 	wd->argc = argc - 5;
@@ -82,10 +85,8 @@ static void InitStruct(wd_t* wd, int argc, char* argv[])
 	wd->max_misses = max_misses;
 	wd->interval = interval;
 	wd->revive_counter = 0;
-	wd->client_exec_path = argv[4];
-	
-	wd->other_process_pid = getppid();
-	ExitIfBad(wd->other_process_pid != 1, FAIL, "wd_launch.c-> InitStruct(): ppid = 1\n");
+	wd->client_exec_path = argv[CLIENT_PATH_IDX];
+	wd->other_process_pid = other_process_pid;
 	
 	wd->scheduler = SchedCreate();
 	ExitIfBad(NULL != wd->scheduler, FAIL, "wd_launch.c-> InitStruct(): SchedCreate() FAILED!\n");
@@ -124,7 +125,7 @@ static int SendSignalTaskWD(void* arg)
 	return TO_RESCHEDULE;
 }
 
-static int CheckCounterTaskWD(void* arg) /* wd_t* */
+static int CheckCounterTaskWD(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	
@@ -168,7 +169,7 @@ static int CheckCounterTaskWD(void* arg) /* wd_t* */
 	return TO_RESCHEDULE;
 }
 
-static void ReviveClient(void* arg) /* wd_t* */
+static void ReviveClient(void* arg)
 {
 	int status = -1;
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
