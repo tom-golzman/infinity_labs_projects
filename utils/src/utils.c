@@ -16,16 +16,22 @@ void ExitIfBad(int is_good, int exit_status, const char* message)
 
 void Log(const char* message)
 {
-    /* print message to stderr */
-    perror(message);
+	/* print message to stderr */
+	perror(message);
 }
 
 void LogIfBad(int is_good, const char* message)
 {
 	if(!is_good)
 	{
+		/* bold ON */
+		fprintf(stderr, "\033[1m");
+	
 		/* print message to std error */
 		fputs(message, stderr);
+
+		/* bold OFF */
+		fprintf(stderr, "\033[0m");
 	}
 }
 

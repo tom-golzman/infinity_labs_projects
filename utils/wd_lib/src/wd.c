@@ -6,15 +6,15 @@
 
 /************************************ includes ************************************/
 #define _POSIX_C_SOURCE 200112L
-#include <signal.h>		/* sigaction, sig_atomic_t */
-#include <unistd.h>		/* getpid, execv, kill */
+#include <signal.h>		/* sigaction(), sig_atomic_t */
+#include <unistd.h>		/* getpid(), execv(), kill() */
 #include <assert.h>		/* assert */
-#include <time.h>		/* time */
-#include <string.h>		/* memset */
+#include <time.h>		/* time() */
+#include <string.h>		/* memset() */
 #include <semaphore.h>	/* sem_t, sem_init() */
 #include <pthread.h>	/* pthread_t, pthread_create() */
 #include <errno.h>		/* errno */
-
+#include <sys/wait.h>	/* waitpid() */
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 
 #include "scheduler.h"
@@ -50,7 +50,7 @@ typedef struct data
 
 static volatile sig_atomic_t g_counter = 2;
 static volatile int g_is_dnr_received = FALSE;
-
+static pthread_t g_thread;
 /******************************** Private Functions ********************************/
 static void* ThreadFunc(void* arg);
 static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsigned long interval, const char* wd_exec_path);
@@ -87,7 +87,6 @@ static void HandleSIGUSR1(int sig);
 /************************************ Functions ************************************/
 int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path)
 {
-	pthread_t thread_id = {0};
 	mmi_data_t* mmi_data = NULL;
 	int status = 0;
 	volatile int is_first_signal_received = FALSE;
@@ -116,7 +115,7 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): InitMMIDataStruct() FAILED!\n", DestroyMMI(mmi_data));
 	
 	/* create thread */
-	status = pthread_create(&thread_id, NULL, ThreadFunc, mmi_data);
+	status = pthread_create(&g_thread, NULL, ThreadFunc, mmi_data);
 	RET_IF_BAD_CLEAN(0 == status, FAIL, "wd.c-> MakeMeImmortal(): pthread_create() FAILED!\n", DestroyMMI(mmi_data));
 	
 	/* wait for semaphore */
@@ -140,8 +139,10 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 void DNR()
 {
 	/* change global flag of DNR to TRUE */
-	g_is_dnr_received = TRUE;
-}
+	__atomic_store_n(&g_is_dnr_received, TRUE, __ATOMIC_SEQ_CST);
+	
+	pthread_join(g_thread, NULL);
+} 
 
 static void* ThreadFunc(void* arg)
 {
@@ -315,6 +316,10 @@ static int AddMainstreamTasks(wd_t* wd)
 	/* take current time */
 	now = time(NULL);
 	RET_IF_BAD(-1 != now, FAIL, "wd.c-> AddMainstreamTasks(): time(NULL) FAILED!\n");
+
+	/* add task - check DNR */
+	task_uid = SchedAddTask(wd->scheduler, now, CheckDNRTask, wd, NULL, NULL, wd->interval);
+	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(CheckDNRTask) FAILED!\n");
 	
 	/* add task - send signal */
 	task_uid = SchedAddTask(wd->scheduler, now, SendSignalClientTask, wd, NULL, NULL, wd->interval);
@@ -323,10 +328,6 @@ static int AddMainstreamTasks(wd_t* wd)
 	/* add task - check counter client */
 	task_uid = SchedAddTask(wd->scheduler, now, CheckCounterClientTask, wd, NULL, NULL, wd->interval);
 	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(SendSignalClient) FAILED!\n");
-
-	/* add task - check DNR */
-	task_uid = SchedAddTask(wd->scheduler, now, CheckDNRTask, wd, NULL, NULL, wd->interval);
-	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(CheckDNRTask) FAILED!\n");
 
 	/* return SUCCESS */
 	return SUCCESS;
@@ -366,7 +367,6 @@ static int InitSchedulerClient(wd_t* wd)
 static int CreateWDProcess(char* new_argv[], const char* wd_exec_path)
 {
 	pid_t pid = -1;
-	int status = 0;
 	
 	/* assert */
 	assert(NULL != new_argv);
@@ -387,18 +387,17 @@ static int CreateWDProcess(char* new_argv[], const char* wd_exec_path)
 	if (0 == pid)
 	{
 		/* execv() & handle failure */
-		status = execv(wd_exec_path, new_argv);	
+		execv(wd_exec_path, new_argv);	
 		_exit(1);
 	}
 
 	/* return FAIL */
 	return FAIL;
 }
-#include <sys/wait.h>
+
 static int ReviveWD(wd_t* wd)
 {
 	int status = 0;
-	int pid_status = 0;
 	
 	/* assert */
 	assert(NULL != wd);
@@ -409,8 +408,9 @@ static int ReviveWD(wd_t* wd)
 	
 	/* reset g_counter */
 	g_counter = 2;
-	Log("-------------reached wait pid\n");
-	waitpid(wd->other_process_pid, &pid_status, WNOHANG);
+
+	waitpid(wd->other_process_pid, NULL, WNOHANG);
+	
 	/* create new wd process & assign wd pid in the wd struct */
 	wd->other_process_pid = CreateWDProcess(wd->new_argv, wd->wd_exec_path);
 	
@@ -673,19 +673,26 @@ static int CheckCounterClientTask(void* arg)
 static int CheckDNRTask(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
-
+	int status = -1;
+	
 	/* if received dnr */
-	if (g_is_dnr_received)
+	if (__atomic_load_n(&g_is_dnr_received, __ATOMIC_SEQ_CST))
 	{
 		/* print to log */
 		Log("wd.c-> CheckDNRTask(): DNR received - exiting\n");
+		
+		/* send signal to client */
+		status = kill(wd->other_process_pid, SIGKILL);
+		LogIfBad(0 == status, "wd.c-> CheckDNRTask(): kill() FAILED!\n");
+		
+		waitpid(wd->other_process_pid, NULL, WNOHANG);
 		
 		/* stop scheduler */
 		SchedStop(wd->scheduler);
 		
 		/* return NOT_RESCHEDULE */
 		return NOT_RESCHEDULE;
-	}	
+	}
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;

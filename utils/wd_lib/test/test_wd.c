@@ -5,7 +5,7 @@
 
 #include "wd.h"
 
-enum { MAX_MISSES = 6, INTERVAL = 1 };
+enum { MAX_MISSES = 6, INTERVAL = 2 };
 
 /******************************** main ********************************/
 int main(int argc, char* argv[])
@@ -13,8 +13,10 @@ int main(int argc, char* argv[])
 	/* call MakeMeImmortal() */
 	MakeMeImmortal(argc, argv, MAX_MISSES, INTERVAL ,"/home/tom/git/utils/wd_exe/wd_launch.out");
 	
-	while (1)
-	{}
+	sleep(2);
+	
+	/* call DNR() */
+	DNR();
 	
 	/* return SUCCESS */
 	return SUCCESS;

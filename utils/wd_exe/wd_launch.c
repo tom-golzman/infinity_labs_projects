@@ -195,6 +195,7 @@ static void HandleSIGUSR1(int sig)
 {
 	/* assert */
 	assert(sig == SIGUSR1);
+	
 	/* reset g_counter */
 	g_counter = 0;
 }
