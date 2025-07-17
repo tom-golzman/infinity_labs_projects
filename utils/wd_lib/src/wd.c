@@ -21,7 +21,7 @@
 #include "wd.h"
 
 /************************************ defines************************************/
-enum { WD_PATH_IDX = 0, MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PID_IDX = 3, MAX_REVIVES = 3, NUM_ADDED_FIELDS = 4, ARGV_BUFF_SIZE = 20 };
+enum { WD_PATH_IDX = 0, MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PID_IDX = 3, NUM_ADDED_FIELDS = 4, ARGV_BUFF_SIZE = 2000 };
 
 typedef struct watchdog
 {
@@ -29,7 +29,6 @@ typedef struct watchdog
 	char** new_argv;
 	int max_misses;
 	unsigned long interval;
-	int revive_counter;
 	sched_t* scheduler;
 	const char* wd_exec_path;
 	pid_t other_process_pid; /* wd pid */
@@ -49,7 +48,7 @@ typedef struct data
 	sem_t* sem;
 } mmi_data_t;
 
-static volatile sig_atomic_t g_counter = 1;
+static volatile sig_atomic_t g_counter = 2;
 static volatile int g_is_dnr_received = FALSE;
 
 /******************************** Private Functions ********************************/
@@ -65,7 +64,7 @@ static int AddMainstreamTasks(wd_t* wd);
 static int AddRevivalTasks(wd_t* wd);
 
 static int InitSchedulerClient(wd_t* wd);
-static int CreateWDProcess(char* new_argv[], const char* wd_exec_path, pid_t* returned_wd_pid);
+static int CreateWDProcess(char* new_argv[], const char* wd_exec_path);
 static int ReviveWD(wd_t* wd);
 
 static void DestroyArgv(char* argv[]);
@@ -108,6 +107,10 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	mmi_data = (mmi_data_t*)calloc(1, sizeof(mmi_data_t));
 	RET_IF_BAD(NULL != mmi_data, FAIL, "wd.c-> MakeMeImmortal(): calloc(mmi_data) FAILED!\n");
 	
+	/* init semaphore */
+	status = sem_init(&sem, 0, 0);
+	RET_IF_BAD(0 == status, FAIL, "wd.c-> MakeMeImmortal(): sem_init() FAILED!\n");
+	
 	/* initialize struct to pass arguments to the thread function */
 	status = InitMMIDataStruct(mmi_data, argc, argv, max_misses, interval, wd_exec_path, &is_first_signal_received, &sem);
 	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): InitMMIDataStruct() FAILED!\n", DestroyMMI(mmi_data));
@@ -118,7 +121,7 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	
 	/* wait for semaphore */
 	status = SemWaitWithTimeout(&sem, sem_timeout_sec);
-	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> SemWaitWithTimeout(): sem_wait() FAILED!\n", DestroySemaphore(&sem));
+	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): sem_wait() FAILED!\n", DestroySemaphore(&sem));
 	
 	/* destroy semaphore */
 	DestroySemaphore(&sem);
@@ -147,7 +150,6 @@ static void* ThreadFunc(void* arg)
 	int new_argc = 0;
 	int status = 0;
 	wd_t wd;
-	pid_t wd_pid = -1;
 	
 	/* recreate argv */
 	new_argv = ReCreateArgv(mmi_data->argc, mmi_data->original_argv, mmi_data->max_misses, mmi_data->interval, mmi_data->wd_exec_path);
@@ -162,21 +164,17 @@ static void* ThreadFunc(void* arg)
 	/* initialize wd struct fields */
 	status = InitWDStruct(&wd, new_argc, new_argv, mmi_data->max_misses, mmi_data->interval, mmi_data->is_first_signal_received, mmi_data->sem);
 	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): InitWDStruct() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
-	
+
 	/* set signal handlers */
 	status = SetSignalHandlers();
 	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): SetSignalHandlers() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
-	
+
 	/* unmask signals */
 	status = UnMaskSignals();
 	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): UnMaskSignals() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
-		
-	/* create wd process */
-	status = CreateWDProcess(new_argv, new_argv[0], &wd_pid);
-	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): CreateWDProcess() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
-	
-	/* assign wd pid in the wd struct */
-	wd.other_process_pid = wd_pid;
+
+	/* create wd process & assign wd pid in the wd struct*/
+	wd.other_process_pid = CreateWDProcess(new_argv, new_argv[0]);
 	
 	/* init client scheduler */
 	status = InitSchedulerClient(&wd);
@@ -193,8 +191,6 @@ static void* ThreadFunc(void* arg)
 
 static int InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path, volatile int* is_first_signal_received, sem_t* sem)
 {
-	int status = -1;
-
 	assert(NULL != mmi_data);
 	assert(NULL != argv);
 	assert(NULL != wd_exec_path);
@@ -207,11 +203,6 @@ static int InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int m
 	mmi_data->interval = interval;
 	mmi_data->wd_exec_path = wd_exec_path;
 	mmi_data->is_first_signal_received = is_first_signal_received;
-	
-	/* init semaphore */
-	status = sem_init(sem, 0, 0);
-	RET_IF_BAD(0 == status, FAIL, "wd.c-> InitMMIDataStruct(): sem_init() FAILED!\n");
-	
 	mmi_data->sem = sem;
 	
 	return SUCCESS;
@@ -231,15 +222,15 @@ static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsi
 	
 	/* convert max_misses to string */
 	sprintf_status = snprintf(misses_str, sizeof(misses_str), "%d", max_misses);	
-	RET_IF_BAD(ARGV_BUFF_SIZE == sprintf_status, NULL, "wd.c-> ReCreateArgv(): snprintf(misses_str) FAILED!\n");
+	RET_IF_BAD(sprintf_status >= 0, NULL, "wd.c-> ReCreateArgv(): snprintf(misses_str) FAILED!\n");
 	
 	/* convert interval to string */
 	sprintf_status = snprintf(interval_str, sizeof(interval_str), "%lu", interval);
-	RET_IF_BAD(ARGV_BUFF_SIZE == sprintf_status, NULL, "wd.c-> ReCreateArgv(): snprintf(interval_str) FAILED!\n");	
+	RET_IF_BAD(sprintf_status >= 0, NULL, "wd.c-> ReCreateArgv(): snprintf(interval_str) FAILED!\n");	
 	
 	/* convert pid to string */
 	sprintf_status = snprintf(curr_pid_str, sizeof(curr_pid_str), "%d", getpid());
-	RET_IF_BAD(ARGV_BUFF_SIZE == sprintf_status, NULL, "wd.c-> ReCreateArgv(): snprintf(curr_pid_str) FAILED!\n");
+	RET_IF_BAD(sprintf_status >= 0, NULL, "wd.c-> ReCreateArgv(): snprintf(curr_pid_str) FAILED!\n");
 	
 	/* allocate memory for new_argv */
 	new_argv = (char**)calloc(1, (argc + NUM_ADDED_FIELDS + 1) * sizeof(char*)); /* +1 for the NULL at the end */
@@ -248,7 +239,7 @@ static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsi
 	/* initialize in new argv wd_exec_path, max_misses, interval and pid */
 	new_argv[WD_PATH_IDX] = StrDup(wd_exec_path);
 	RET_IF_BAD(NULL != new_argv[WD_PATH_IDX], NULL, "wd.c-> ReCreateArgv(): StrDup(wd_exec_path) FAILED!\n");
-	
+
 	new_argv[MAX_MISSES_IDX] = StrDup(misses_str);
 	RET_IF_BAD(NULL != new_argv[MAX_MISSES_IDX], NULL, "wd.c-> ReCreateArgv(): StrDup(misses_str) FAILED!\n");
 
@@ -260,9 +251,9 @@ static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsi
 
 	/* copy the original argv to new argv */
 	memcpy(&new_argv[NUM_ADDED_FIELDS], original_argv, argc * sizeof(char*));
-	
+
 	/* add NULL at the end of the new argv */
-	new_argv[argc + NUM_ADDED_FIELDS + 1] = NULL;
+	new_argv[argc + NUM_ADDED_FIELDS] = NULL;
 	
 	/* return new argv */
 	return new_argv;
@@ -278,7 +269,6 @@ static int InitWDStruct(wd_t* wd, int argc, char* argv[], int max_misses, unsign
 	wd->new_argv = argv;
 	wd->max_misses = max_misses;
 	wd->interval = interval;
-	wd->revive_counter = 0;
 	wd->wd_exec_path = argv[WD_PATH_IDX];
 	wd->other_process_pid = getpid();
 	wd->is_first_signal_received = is_first_signal_received;
@@ -300,11 +290,11 @@ static int AddInitialTasks(wd_t* wd)
 	/* assert */
 	assert(NULL != wd);
 	assert(NULL != wd->scheduler);
-	
+
 	/* take current time */
 	now = time(NULL);
 	RET_IF_BAD(-1 != now, FAIL, "wd.c-> AddInitTask(): time(NULL) FAILED!\n");
-	
+
 	/* add task - increment counter */
 	task_uid = SchedAddTask(wd->scheduler, now, WaitFirstSignalTask, wd, NULL, NULL, wd->interval);
 	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddInitTask(): AddTask(WaitFirstSignalTask) FAILED!\n");
@@ -329,11 +319,11 @@ static int AddMainstreamTasks(wd_t* wd)
 	/* add task - send signal */
 	task_uid = SchedAddTask(wd->scheduler, now, SendSignalClientTask, wd, NULL, NULL, wd->interval);
 	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(SendSignalClient) FAILED!\n");
-	
+
 	/* add task - check counter client */
 	task_uid = SchedAddTask(wd->scheduler, now, CheckCounterClientTask, wd, NULL, NULL, wd->interval);
 	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(SendSignalClient) FAILED!\n");
-	
+
 	/* add task - check DNR */
 	task_uid = SchedAddTask(wd->scheduler, now, CheckDNRTask, wd, NULL, NULL, wd->interval);
 	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(CheckDNRTask) FAILED!\n");
@@ -373,14 +363,14 @@ static int InitSchedulerClient(wd_t* wd)
 	return AddInitialTasks(wd);
 }
 
-static int CreateWDProcess(char* new_argv[], const char* wd_exec_path, pid_t* returned_wd_pid)
+static int CreateWDProcess(char* new_argv[], const char* wd_exec_path)
 {
 	pid_t pid = -1;
+	int status = 0;
 	
 	/* assert */
 	assert(NULL != new_argv);
 	assert(NULL != wd_exec_path);
-	assert(NULL != returned_wd_pid);
 	
 	/* fork & handle failure */
 	pid = fork();
@@ -389,24 +379,18 @@ static int CreateWDProcess(char* new_argv[], const char* wd_exec_path, pid_t* re
 	/* if parent */
 	if (pid > 0)
 	{
-		/* save wd pid in the struct */
-		*returned_wd_pid = pid;
-	
-		/* return SUCCESS */
-		return SUCCESS;
+		/* return wd pid */
+		return pid;
 	}
 	
-	/* if child: */
+	/* if child */
 	if (0 == pid)
 	{
 		/* execv() & handle failure */
-		execv(wd_exec_path, new_argv);	
+		status = execv(wd_exec_path, new_argv);	
+		ExitIfBad(-1 != status, FAIL,"wd.c-> CreateWDProcess(): execv() FAILED!\n");
 	}
-	
-	/* if execv returns - failed */
-	/* log */
-	Log("wd.c-> CreateWDProcess(): execv() FAILED!\n");
-	
+
 	/* return FAIL */
 	return FAIL;
 }
@@ -414,7 +398,6 @@ static int CreateWDProcess(char* new_argv[], const char* wd_exec_path, pid_t* re
 static int ReviveWD(wd_t* wd)
 {
 	int status = 0;
-	pid_t wd_pid = -1;
 	
 	/* assert */
 	assert(NULL != wd);
@@ -426,15 +409,8 @@ static int ReviveWD(wd_t* wd)
 	/* reset g_counter */
 	g_counter = 1;
 	
-	/* reset revive counter */
-	wd->revive_counter = 0;
-	
-	/* create new wd process */
-	status = CreateWDProcess(wd->new_argv, wd->wd_exec_path, &wd_pid);
-	RET_IF_BAD(0 == status, FAIL, "wd.c-> ReviveWD(): CreateWDProcess() FAILED!\n");
-	
-	/* assign wd pid in the wd struct */
-	wd->other_process_pid = wd_pid;
+	/* create new wd process & assign wd pid in the wd struct */
+	wd->other_process_pid = CreateWDProcess(wd->new_argv, wd->wd_exec_path);
 	
 	/* clear scheduler */
 	SchedClear(wd->scheduler);
@@ -449,7 +425,7 @@ static int ReviveWD(wd_t* wd)
 
 static int SemWaitWithTimeout(sem_t* sem, int timeout_sec)
 {
-	struct timespec ts;
+	struct timespec ts = { 0 };
 	int status = 0;
 	
 	/* assign current time into ts struct */
@@ -558,17 +534,14 @@ static int WaitFirstSignalTask(void* arg)
 	int status = 0;
 	
 	/* if g_counter is zero */
-	if (0 == g_counter)
+	if (0 == g_counter || 1 == g_counter)
 	{
 		/* update flag that was received first siganl */
 		*(wd->is_first_signal_received) = TRUE;
 				
 		/* post the semaphore to indicate MMI() that first signal was received */
 		sem_post(wd->sem);
-		
-		/* reset the revive counter in the struct */
-		wd->revive_counter = 0;
-		
+
 		/* move to mainstream phase: */
 		/* add mainstream tasks */
 		status = AddMainstreamTasks(wd);
@@ -582,32 +555,25 @@ static int WaitFirstSignalTask(void* arg)
 			/* stop scheduler */
 			SchedStop(wd->scheduler);		
 		}
-		
+
 		/* return NOT_RESCHEDULE - phase 1 finished */
 		return NOT_RESCHEDULE;
 	}
 	
 	/* increase counter */
 	++g_counter;
-	
+
 	/* if g_counter is above max_misses */
 	if (g_counter > wd->max_misses)
 	{
-		/* if revive counter is equal to MAX_REVIVES */
-		if (wd->revive_counter >= MAX_REVIVES)
-		{
-			/* write to log */
-			Log("wd.c-> WaitFirstSignalTask(): WD didn't send first signal - exiting\n");
-			
-			/* stop scheduler */
-			SchedStop(wd->scheduler);
-			
-			/* return NOT_RESCHEDULE */
-			return NOT_RESCHEDULE;
-		}
-					
-		/* increase revive counter in the struct */
-		++wd->revive_counter;
+		/* write to log */
+		Log("wd.c-> WaitFirstSignalTask(): WD didn't send first signal - exiting\n");
+		
+		/* stop scheduler */
+		SchedStop(wd->scheduler);
+		
+		/* return NOT_RESCHEDULE */
+		return NOT_RESCHEDULE;
 	}
 	
 	/* return TO_RESCHEDULE */
@@ -620,11 +586,8 @@ static int WaitForConnectionTask(void* arg)
 	int status = 0;
 	
 	/* if g_counter is zero */
-	if (0 == g_counter)
+	if (0 == g_counter || 1 == g_counter)
 	{
-		/* reset the revive counter in the struct */
-		wd->revive_counter = 0;
-		
 		/* move to mainstream phase: */
 		/* add mainstream tasks */
 		status = AddMainstreamTasks(wd);
@@ -649,21 +612,14 @@ static int WaitForConnectionTask(void* arg)
 	/* if g_counter is above max_misses */
 	if (g_counter > wd->max_misses)
 	{
-		/* if revive counter is equal to MAX_REVIVES */
-		if (wd->revive_counter >= MAX_REVIVES)
-		{
-			/* write to log */
-			Log("wd.c-> WaitForConnectionTask(): WD didn't send first signal - exiting\n");
-			
-			/* stop scheduler */
-			SchedStop(wd->scheduler);
-			
-			/* return NOT_RESCHEDULE */
-			return NOT_RESCHEDULE;
-		}
-					
-		/* increase revive counter in the struct */
-		++wd->revive_counter;
+		/* write to log */
+		Log("wd.c-> WaitForConnectionTask(): WD didn't send first signal - exiting\n");
+		
+		/* stop scheduler */
+		SchedStop(wd->scheduler);
+		
+		/* return NOT_RESCHEDULE */
+		return NOT_RESCHEDULE;
 	}
 	
 	/* return TO_RESCHEDULE */
@@ -687,40 +643,23 @@ static int CheckCounterClientTask(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	
-	/* if g_counter is zero */
-	if (0 == g_counter)
-	{
-		/* reset revive counter */
-		wd->revive_counter = 0;
-		
-		/* return TO_RESCHEDULE */
-		return TO_RESCHEDULE;
-	}
-	
 	/* increse g_counter */
 	++g_counter;
-	
+
 	/* if g_counter is above max_misses */
 	if (g_counter > wd->max_misses)
 	{
-		/* if revive counter is equal to MAX_REVIVES */
-		if (wd->revive_counter >= MAX_REVIVES)
-		{
-			/* write to log */
-			Log("wd.c-> CheckCounterClientTask(): Client didn't respond - exiting\n");
-			
-			/* stop scheduler */
-			SchedStop(wd->scheduler);
-			
-			/* return NOT_RESCHEDULE */
-			return NOT_RESCHEDULE;
-		}
+		/* write to log */
+		Log("wd.c-> CheckCounterClientTask(): Client didn't respond - exiting\n");
+
+		/* stop scheduler */
+		SchedStop(wd->scheduler);
 					
-		/* increase revive counter in the struct */
-		++wd->revive_counter;
-		
 		/* call revive client */
 		ReviveWD(wd);
+		
+		/* return NOT_RESCHEDULE */
+		return NOT_RESCHEDULE;
 	}
 	
 	/* return TO_RESCHEDULE */

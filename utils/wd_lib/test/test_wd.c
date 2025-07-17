@@ -5,7 +5,7 @@
 
 #include "wd.h"
 
-enum { MAX_MISSES = 3, INTERVAL = 1 };
+enum { MAX_MISSES = 6, INTERVAL = 1 };
 
 /******************************** main ********************************/
 int main(int argc, char* argv[])

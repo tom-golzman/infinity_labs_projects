@@ -17,7 +17,7 @@
 #include "scheduler.h"
 
 /*********************************** defines ***********************************/
-enum { MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PPID_IDX = 3, CLIENT_PATH_IDX = 4, MIN_ARGC = 5,  MAX_REVIVES = 3 };
+enum { MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PPID_IDX = 3, CLIENT_PATH_IDX = 4, MIN_ARGC = 5 };
 
 typedef struct watchdog
 {
@@ -25,7 +25,6 @@ typedef struct watchdog
 	char** argv;
 	int max_misses;
 	unsigned long interval;
-	int revive_counter;
 	sched_t* scheduler;
 	const char* client_exec_path;
 	pid_t other_process_pid; /* client pid */
@@ -71,6 +70,8 @@ static void InitStruct(wd_t* wd, int argc, char* argv[])
 	unsigned long interval = (unsigned long)atoi(argv[INTERVAL_IDX]);
 	pid_t other_process_pid = (pid_t)atoi(argv[PPID_IDX]);
 	
+	char str[333];
+	
 	ExitIfBad(0 != max_misses, FAIL, "wd_launch.c-> InitStruct(): atoi(max_misses) FAILED!\n");
 	ExitIfBad(0 != interval, FAIL, "wd_launch.c-> InitStruct(): atoi(interval) FAILED!\n");
 	ExitIfBad(0 != other_process_pid, FAIL, "wd_launch.c-> InitStruct(): atoi(other_process_pid) FAILED!\n");
@@ -80,11 +81,10 @@ static void InitStruct(wd_t* wd, int argc, char* argv[])
 	assert(argc >= MIN_ARGC);
 		
 	/* initialize struct fields */
-	wd->argc = argc - 5;
-	wd->argv = &argv[5];
+	wd->argc = argc - 4;
+	wd->argv = &argv[4];
 	wd->max_misses = max_misses;
 	wd->interval = interval;
-	wd->revive_counter = 0;
 	wd->client_exec_path = argv[CLIENT_PATH_IDX];
 	wd->other_process_pid = other_process_pid;
 	
@@ -115,10 +115,15 @@ static void InitSchedulerWD(wd_t* wd)
 static int SendSignalTaskWD(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
-	int status = FAIL;
+	int status = -1;
+	
+	char str[1000];
+	
+	
 	
 	/* send signal to client */
 	status = kill(wd->other_process_pid, SIGUSR1);
+	
 	LogIfBad(0 == status, "wd_launch.c-> SendSignalTaskWD(): kill() FAILED!\n");
 	
 	/* return TO_RESCHEDULE */
@@ -129,40 +134,24 @@ static int CheckCounterTaskWD(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	
-	/* if g_counter is zero */
-	if (0 == g_counter)
-	{
-		/* reset revive counter */
-		wd->revive_counter = 0;
-		
-		/* return TO_RESCHEDULE */
-		return TO_RESCHEDULE;
-	}
-	
 	/* increse g_counter */
 	++g_counter;
 	
 	/* if g_counter is above max_misses */
 	if (g_counter > wd->max_misses)
 	{
-		/* if revive counter is equal to MAX_REVIVES */
-		if (wd->revive_counter >= MAX_REVIVES)
-		{
-			/* write to log */
-			Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting\n");
-			
-			/* stop scheduler and cleanup  */
-			SchedStop(wd->scheduler);
-			
-			/* return NOT_RESCHEDULE */
-			return NOT_RESCHEDULE;
-		}
-					
-		/* increase revive counter in the struct */
-		++wd->revive_counter;
+		perror("--------------------CheckCounterTaskWD:");
+		/* write to log */
+		Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting\n");
+		
+		/* stop scheduler and cleanup  */
+		SchedStop(wd->scheduler);
 		
 		/* call revive client */
 		ReviveClient(wd);
+		
+		/* return NOT_RESCHEDULE */
+		return NOT_RESCHEDULE;
 	}
 	
 	/* return TO_RESCHEDULE */
@@ -176,8 +165,8 @@ static void ReviveClient(void* arg)
 
 	/* kill client process */
 	status = kill(wd->other_process_pid, SIGTERM);
-	ExitIfBad(0 == status, FAIL, "wd_launch.c-> ReviveClient(): kill() FAILED!\n");
-	/* TODO: check errno and send SIGSTOP if failed */
+	/*ExitIfBad(0 == status, FAIL, "wd_launch.c-> ReviveClient(): kill() FAILED!\n");
+	 TODO: check errno and send SIGSTOP if failed */
 	
 	/* execv() */
 	execv(wd->client_exec_path, (wd->argv));

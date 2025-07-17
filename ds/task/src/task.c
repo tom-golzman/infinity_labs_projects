@@ -58,7 +58,7 @@ task_t* TaskCreate(time_t execution_time, task_action_t action, void* action_par
 
 void TaskDestroy(task_t* task)
 {
-	if (NULL == task)
+	if (NULL == task || NULL == task->cleanup)
 	{
 		return;
 	}
