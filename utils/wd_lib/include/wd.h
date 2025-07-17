@@ -9,6 +9,6 @@
 
 /************************************Functions************************************/
 int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path);
-void DNR();
+int DNR();
 
 #endif /*__ILRD_WD_H__*/

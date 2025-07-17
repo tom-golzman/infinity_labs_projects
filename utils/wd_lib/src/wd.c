@@ -120,7 +120,7 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	
 	/* wait for semaphore */
 	status = SemWaitWithTimeout(&sem, sem_timeout_sec);
-	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): sem_wait() FAILED!\n", DestroySemaphore(&sem));
+	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): sem_wait() FAILED!\n", pthread_join(g_thread, NULL););
 	
 	/* destroy semaphore */
 	DestroySemaphore(&sem);
@@ -136,12 +136,16 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	return FAIL;
 }
 
-void DNR()
+int DNR()
 {
 	/* change global flag of DNR to TRUE */
 	__atomic_store_n(&g_is_dnr_received, TRUE, __ATOMIC_SEQ_CST);
 	
-	pthread_join(g_thread, NULL);
+	Log("wd.c-> DNR(): DNR received\n");
+	
+	RET_IF_BAD(0 == pthread_join(g_thread, NULL), FAIL, "wd.c-> DNR(): pthread_join() FAILED!\n");
+	
+	return SUCCESS;
 } 
 
 static void* ThreadFunc(void* arg)
@@ -443,10 +447,11 @@ static int SemWaitWithTimeout(sem_t* sem, int timeout_sec)
 	if (-1 == status)
 	{
 		/* if reached timeout */
-		RET_IF_BAD(ETIMEDOUT == errno, FAIL, "wd.c-> SemWaitWithTimeout(): reached timeout\n");
+		RET_IF_BAD_CLEAN(ETIMEDOUT == errno, FAIL, "wd.c-> SemWaitWithTimeout(): reached timeout\n", DestroySemaphore(sem));
 		
 		/* failed for other reason */
 		Log("wd.c-> SemWaitWithTimeout(): sem_timedwait() FAILED!\n");
+		DestroySemaphore(sem);
 		
 		/* return FAIL */
 		return FAIL;
@@ -678,9 +683,6 @@ static int CheckDNRTask(void* arg)
 	/* if received dnr */
 	if (__atomic_load_n(&g_is_dnr_received, __ATOMIC_SEQ_CST))
 	{
-		/* print to log */
-		Log("wd.c-> CheckDNRTask(): DNR received - exiting\n");
-		
 		/* send signal to client */
 		status = kill(wd->other_process_pid, SIGKILL);
 		LogIfBad(0 == status, "wd.c-> CheckDNRTask(): kill() FAILED!\n");
@@ -689,6 +691,9 @@ static int CheckDNRTask(void* arg)
 		
 		/* stop scheduler */
 		SchedStop(wd->scheduler);
+		
+		/* print to log */
+		Log("wd.c-> CheckDNRTask(): wd process dead and scheduler stopped\n");
 		
 		/* return NOT_RESCHEDULE */
 		return NOT_RESCHEDULE;
