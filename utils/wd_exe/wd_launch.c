@@ -125,7 +125,7 @@ static int SendSignalTaskWD(void* arg)
 	status = kill(wd->other_process_pid, SIGUSR1);
 	LogIfBad(0 == status, "wd_launch.c-> SendSignalTaskWD(): kill() FAILED!\n");
 
-	Log("WD sent signal");
+	Log("WD sent signal to %d (pid)\n", wd->other_process_pid);
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
@@ -165,8 +165,7 @@ static void ReviveClient(void* arg)
 
 	/* kill client process */
 	status = kill(wd->other_process_pid, SIGTERM);
-	/*ExitIfBad(0 == status, FAIL, "wd_launch.c-> ReviveClient(): kill() FAILED!\n");
-	 TODO: check errno and send SIGSTOP if failed */
+	LogIfBad(0 == status, "wd_launch.c-> ReviveClient(): kill() FAILED!\n");
 	
 	/* execv() */
 	execvp(wd->client_exec_path, (wd->argv));

@@ -108,7 +108,7 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	
 	/* init semaphore */
 	status = sem_init(&sem, 0, 0);
-	RET_IF_BAD(0 == status, FAIL, "wd.c-> MakeMeImmortal(): sem_init() FAILED!\n");
+	RET_IF_BAD_SC(status, FAIL, "wd.c-> MakeMeImmortal(): sem_init() FAILED!\n");
 	
 	/* initialize struct to pass arguments to the thread function */
 	status = InitMMIDataStruct(mmi_data, argc, argv, max_misses, interval, wd_exec_path, &is_first_signal_received, &sem);
@@ -116,7 +116,7 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	
 	/* create thread */
 	status = pthread_create(&g_thread, NULL, ThreadFunc, mmi_data);
-	RET_IF_BAD_CLEAN(0 == status, FAIL, "wd.c-> MakeMeImmortal(): pthread_create() FAILED!\n", DestroyMMI(mmi_data));
+	RET_IF_BAD_SC_CLEAN(status, FAIL, "wd.c-> MakeMeImmortal(): pthread_create() FAILED!\n", DestroyMMI(mmi_data));
 	
 	/* wait for semaphore */
 	status = SemWaitWithTimeout(&sem, sem_timeout_sec);
@@ -143,7 +143,7 @@ int DNR()
 	
 	Log("wd.c-> DNR(): DNR received\n");
 	
-	RET_IF_BAD(0 == pthread_join(g_thread, NULL), FAIL, "wd.c-> DNR(): pthread_join() FAILED!\n");
+	RET_IF_BAD_SC(pthread_join(g_thread, NULL), FAIL, "wd.c-> DNR(): pthread_join() FAILED!\n");
 	
 	return SUCCESS;
 } 
@@ -180,6 +180,7 @@ static void* ThreadFunc(void* arg)
 
 	/* create wd process & assign wd pid in the wd struct*/
 	wd.other_process_pid = CreateWDProcess(new_argv, new_argv[0]);
+	RET_IF_BAD_CLEAN(FAIL != wd.other_process_pid, NULL, "wd.c-> ThreadFunc(): CreateWDProcess() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
 	
 	/* init client scheduler */
 	status = InitSchedulerClient(&wd);
@@ -408,16 +409,18 @@ static int ReviveWD(wd_t* wd)
 	
 	/* kill wd process */
 	status = kill(wd->other_process_pid, SIGTERM);
-	RET_IF_BAD(0 == status, FAIL, "wd.c-> ReviveWD(): kill() FAILED!\n");
+	RET_IF_BAD_SC(status, FAIL, "wd.c-> ReviveWD(): kill() FAILED!\n");
 	
 	/* reset g_counter */
 	g_counter = 2;
 
-	waitpid(wd->other_process_pid, NULL, WNOHANG);
+	status = waitpid(wd->other_process_pid, NULL, WNOHANG);
+	RET_IF_BAD(-1 != status, FAIL, "wd.c-> ReviveWD(): waitpid() FAILED!\n");
 	
 	/* create new wd process & assign wd pid in the wd struct */
 	wd->other_process_pid = CreateWDProcess(wd->new_argv, wd->wd_exec_path);
-	
+	RET_IF_BAD(FAIL != wd->other_process_pid, FAIL, "wd.c-> ReviveWD(): CreateWDProcess() FAILED!\n");
+		
 	/* clear scheduler */
 	SchedClear(wd->scheduler);
 	
@@ -451,6 +454,8 @@ static int SemWaitWithTimeout(sem_t* sem, int timeout_sec)
 		
 		/* failed for other reason */
 		Log("wd.c-> SemWaitWithTimeout(): sem_timedwait() FAILED!\n");
+		
+		/* destroy semaphore */
 		DestroySemaphore(sem);
 		
 		/* return FAIL */
@@ -547,8 +552,9 @@ static int WaitFirstSignalTask(void* arg)
 		*(wd->is_first_signal_received) = TRUE;
 				
 		/* post the semaphore to indicate MMI() that first signal was received */
-		sem_post(wd->sem);
-
+		status = sem_post(wd->sem);
+		RET_IF_BAD_SC(status, FAIL, "wd.c-> WaitFirstSignalTask(): sem_post() FAILED!\n");
+		
 		/* move to mainstream phase: */
 		/* add mainstream tasks */
 		status = AddMainstreamTasks(wd);
@@ -642,7 +648,7 @@ static int SendSignalClientTask(void* arg)
 	status = kill(wd->other_process_pid, SIGUSR1);
 	LogIfBad(0 == status, "wd.c-> SendSignalClientTask(): kill() FAILED!\n");
 	
-	Log("Client sent signal");
+	Log("Client sent signal to %d (pid)\n", wd->other_process_pid);
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
@@ -687,7 +693,8 @@ static int CheckDNRTask(void* arg)
 		status = kill(wd->other_process_pid, SIGKILL);
 		LogIfBad(0 == status, "wd.c-> CheckDNRTask(): kill() FAILED!\n");
 		
-		waitpid(wd->other_process_pid, NULL, WNOHANG);
+		status = waitpid(wd->other_process_pid, NULL, WNOHANG);
+		RET_IF_BAD(-1 != status, FAIL, "wd.c-> ReviveWD(): waitpid() FAILED!\n");
 		
 		/* stop scheduler */
 		SchedStop(wd->scheduler);
@@ -716,7 +723,7 @@ static int SetSignalHandlers()
 	
 	status = sigaction(SIGUSR1, &sa, NULL);
 	
-	RET_IF_BAD(0 == status, FAIL, "wd.c-> SetSignalHandlers(): sigaction() FAILED!\n");
+	RET_IF_BAD_SC(status, FAIL, "wd.c-> SetSignalHandlers(): sigaction() FAILED!\n");
 
 	return SUCCESS;
 }

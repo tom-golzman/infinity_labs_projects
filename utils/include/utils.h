@@ -7,6 +7,7 @@
 #include <string.h>	/* strlen(), strncpy() */
 #include <stdlib.h>	/* malloc() */
 #include <unistd.h>	/* _exit() */
+#include <stdarg.h>	/* va_list, va_start(), va_end(), vfprintf() */
 
 /************************************Define************************************/
 /* trash memory before free */
@@ -41,7 +42,7 @@ enum { LOG_BUFF_SIZE = 100 };
 /************************************Functions************************************/
 /* systemcalls handling */
 void ExitIfBad(int is_good, int exit_stat, const char* msg);
-void Log(const char* message);
+void Log(const char* format, ...);
 void LogIfBad(int is_good, const char* message);
 char* StrDup(const char* str);
 
@@ -54,9 +55,28 @@ char* StrDup(const char* str);
     } \
 } while(0)
 
+/* return if bad macro for system calls */
+#define RET_IF_BAD_SC(statement, return_status, msg) do{ \
+    if(0 != statement) \
+    { \
+		perror(msg); \
+		return return_status; \
+    } \
+} while(0)
+
 /* return if bad with clean function macro */
 #define RET_IF_BAD_CLEAN(is_good, return_status, msg, cleanup_call)	do{ \
 	if(!(is_good)) \
+	{ \
+		perror(msg); \
+		cleanup_call; \
+		return return_status; \
+	} \
+}while(0)
+
+/* return if bad with clean function macro for system calls */
+#define RET_IF_BAD_SC_CLEAN(statement, return_status, msg, cleanup_call)	do{ \
+	if(0 != statement) \
 	{ \
 		perror(msg); \
 		cleanup_call; \
