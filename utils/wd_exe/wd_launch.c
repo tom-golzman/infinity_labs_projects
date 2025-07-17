@@ -140,7 +140,6 @@ static int CheckCounterTaskWD(void* arg)
 	/* if g_counter is above max_misses */
 	if (g_counter > wd->max_misses)
 	{
-		perror("--------------------CheckCounterTaskWD:");
 		/* write to log */
 		Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting\n");
 		
