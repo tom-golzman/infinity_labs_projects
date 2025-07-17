@@ -388,16 +388,17 @@ static int CreateWDProcess(char* new_argv[], const char* wd_exec_path)
 	{
 		/* execv() & handle failure */
 		status = execv(wd_exec_path, new_argv);	
-		ExitIfBad(-1 != status, FAIL,"wd.c-> CreateWDProcess(): execv() FAILED!\n");
+		_exit(1);
 	}
 
 	/* return FAIL */
 	return FAIL;
 }
-
+#include <sys/wait.h>
 static int ReviveWD(wd_t* wd)
 {
 	int status = 0;
+	int pid_status = 0;
 	
 	/* assert */
 	assert(NULL != wd);
@@ -407,8 +408,9 @@ static int ReviveWD(wd_t* wd)
 	RET_IF_BAD(0 == status, FAIL, "wd.c-> ReviveWD(): kill() FAILED!\n");
 	
 	/* reset g_counter */
-	g_counter = 1;
-	
+	g_counter = 2;
+	Log("-------------reached wait pid\n");
+	waitpid(wd->other_process_pid, &pid_status, WNOHANG);
 	/* create new wd process & assign wd pid in the wd struct */
 	wd->other_process_pid = CreateWDProcess(wd->new_argv, wd->wd_exec_path);
 	
@@ -630,10 +632,12 @@ static int SendSignalClientTask(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	int status = FAIL;
-	
+
 	/* send signal to client */
 	status = kill(wd->other_process_pid, SIGUSR1);
 	LogIfBad(0 == status, "wd.c-> SendSignalClientTask(): kill() FAILED!\n");
+	
+	Log("Client sent signal");
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
@@ -642,7 +646,7 @@ static int SendSignalClientTask(void* arg)
 static int CheckCounterClientTask(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
-	
+
 	/* increse g_counter */
 	++g_counter;
 
@@ -650,7 +654,7 @@ static int CheckCounterClientTask(void* arg)
 	if (g_counter > wd->max_misses)
 	{
 		/* write to log */
-		Log("wd.c-> CheckCounterClientTask(): Client didn't respond - exiting\n");
+		Log("wd.c-> CheckCounterClientTask(): WD didn't respond - exiting\n");
 
 		/* stop scheduler */
 		SchedStop(wd->scheduler);
@@ -669,7 +673,7 @@ static int CheckCounterClientTask(void* arg)
 static int CheckDNRTask(void* arg)
 {
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
-	
+
 	/* if received dnr */
 	if (g_is_dnr_received)
 	{
@@ -743,7 +747,7 @@ static void HandleSIGUSR1(int sig)
 {
 	/* assert */
 	assert(sig == SIGUSR1);
-
+	
 	/* reset g_counter */
 	g_counter = 0;
 }

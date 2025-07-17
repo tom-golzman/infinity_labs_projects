@@ -68,9 +68,13 @@ static void InitStruct(wd_t* wd, int argc, char* argv[])
 {
 	int max_misses = atoi(argv[MAX_MISSES_IDX]);
 	unsigned long interval = (unsigned long)atoi(argv[INTERVAL_IDX]);
-	pid_t other_process_pid = (pid_t)atoi(argv[PPID_IDX]);
+	pid_t other_process_pid = getppid();
 	
-	char str[333];
+	if (1 == other_process_pid)
+	{
+		
+		execv(argv[CLIENT_PATH_IDX], argv);
+	}
 	
 	ExitIfBad(0 != max_misses, FAIL, "wd_launch.c-> InitStruct(): atoi(max_misses) FAILED!\n");
 	ExitIfBad(0 != interval, FAIL, "wd_launch.c-> InitStruct(): atoi(interval) FAILED!\n");
@@ -117,14 +121,11 @@ static int SendSignalTaskWD(void* arg)
 	wd_t* wd = (assert(NULL != arg), (wd_t*)arg);
 	int status = -1;
 	
-	char str[1000];
-	
-	
-	
 	/* send signal to client */
 	status = kill(wd->other_process_pid, SIGUSR1);
-	
 	LogIfBad(0 == status, "wd_launch.c-> SendSignalTaskWD(): kill() FAILED!\n");
+
+	Log("WD sent signal");
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
@@ -136,12 +137,12 @@ static int CheckCounterTaskWD(void* arg)
 	
 	/* increse g_counter */
 	++g_counter;
-	
+
 	/* if g_counter is above max_misses */
 	if (g_counter > wd->max_misses)
 	{
 		/* write to log */
-		Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting\n");
+		Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting!\n");
 		
 		/* stop scheduler and cleanup  */
 		SchedStop(wd->scheduler);
@@ -168,7 +169,7 @@ static void ReviveClient(void* arg)
 	 TODO: check errno and send SIGSTOP if failed */
 	
 	/* execv() */
-	execv(wd->client_exec_path, (wd->argv));
+	execvp(wd->client_exec_path, (wd->argv));
 	
 	/* if execv returns - failed */
 	/* log */
@@ -185,9 +186,8 @@ static void SetSignalHandlers()
 
 	/* set handlers with sigaction */
 	sa.sa_handler = HandleSIGUSR1;
-	
+
 	status = sigaction(SIGUSR1, &sa, NULL);
-	
 	ExitIfBad(0 == status, FAIL, "wd_launch.c-> SetSignalHandlers(): sigaction() FAILED!\n");
 }
 
@@ -195,7 +195,6 @@ static void HandleSIGUSR1(int sig)
 {
 	/* assert */
 	assert(sig == SIGUSR1);
-	
 	/* reset g_counter */
 	g_counter = 0;
 }
