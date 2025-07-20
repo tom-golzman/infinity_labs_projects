@@ -415,7 +415,12 @@ static int ReviveWD(wd_t* wd)
 	g_counter = 2;
 
 	status = waitpid(wd->other_process_pid, NULL, WNOHANG);
-	RET_IF_BAD(-1 != status, FAIL, "wd.c-> ReviveWD(): waitpid() FAILED!\n");
+	
+	/* if waitpid() returns ECHILD - its success */
+	if (-1 == status)
+	{
+		RET_IF_BAD(ECHILD != errno, FAIL, "wd.c-> ReviveWD(): waitpid() FAILED!\n");
+	}
 	
 	/* create new wd process & assign wd pid in the wd struct */
 	wd->other_process_pid = CreateWDProcess(wd->new_argv, wd->wd_exec_path);
@@ -694,7 +699,12 @@ static int CheckDNRTask(void* arg)
 		LogIfBad(0 == status, "wd.c-> CheckDNRTask(): kill() FAILED!\n");
 		
 		status = waitpid(wd->other_process_pid, NULL, WNOHANG);
-		RET_IF_BAD(-1 != status, FAIL, "wd.c-> ReviveWD(): waitpid() FAILED!\n");
+		
+		/* if waitpid() returns ECHILD - its success */
+		if (-1 == status)
+		{
+			RET_IF_BAD(ECHILD != errno, FAIL, "wd.c-> CheckDNRTask(): waitpid() FAILED!\n");
+		}
 		
 		/* stop scheduler */
 		SchedStop(wd->scheduler);
