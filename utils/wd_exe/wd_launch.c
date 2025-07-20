@@ -1,12 +1,12 @@
 /**
 	Written By: Tom Golzman
 	Date: 09/07/2025
-	Reviewed By: 
+	Reviewed By: Amir Granot
 **/
 
 /*********************************** includes ***********************************/
 #define _POSIX_C_SOURCE 200112L
-#include <signal.h>	/* sigaction, sig_atomic_t */
+#include <signal.h>	/* sigaction, sig_atomic_t */ 
 #include <unistd.h>	/* getppid, execv, kill */
 #include <assert.h>	/* assert */
 #include <time.h>	/* time */
@@ -17,11 +17,17 @@
 #include "scheduler.h"
 
 /*********************************** defines ***********************************/
-enum { MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PPID_IDX = 3, CLIENT_PATH_IDX = 4, MIN_ARGC = 5 };
+enum
+{
+	MAX_MISSES_IDX = 1,
+	INTERVAL_IDX = 2,
+	PPID_IDX = 3,
+	CLIENT_PATH_IDX = 4,
+	MIN_ARGC = 5
+};
 
 typedef struct watchdog
 {
-	int argc;
 	char** argv;
 	int max_misses;
 	unsigned long interval;
@@ -33,7 +39,7 @@ typedef struct watchdog
 static volatile sig_atomic_t g_counter = 1;
 
 /******************************* private functions *****************************/
-static void InitStruct(wd_t* wd, int argc, char* argv[]);
+static void InitStruct(wd_t* wd, char* argv[]);
 static void InitSchedulerWD(wd_t* wd);
 static int SendSignalTaskWD(void* arg);
 static int CheckCounterTaskWD(void* arg);
@@ -45,7 +51,7 @@ static void HandleSIGUSR1(int sig);
 int main(int argc, char* argv[])
 {
 	/* create wd_t struct */
-	wd_t wd;
+	wd_t wd = { 0 };
 	
 	/* assert */
 	assert(argc >= MIN_ARGC);
@@ -54,7 +60,7 @@ int main(int argc, char* argv[])
 	SetSignalHandlers();
 	
 	/* initialize struct fields */
-	InitStruct(&wd, argc, argv);
+	InitStruct(&wd, argv);
 		
 	/* init wd scheduler */
 	InitSchedulerWD(&wd);
@@ -64,36 +70,37 @@ int main(int argc, char* argv[])
 }
 
 /************************************ Functions ************************************/
-static void InitStruct(wd_t* wd, int argc, char* argv[])
+static void InitStruct(wd_t* wd, char* argv[])
 {
 	int max_misses = atoi(argv[MAX_MISSES_IDX]);
-	unsigned long interval = (unsigned long)atoi(argv[INTERVAL_IDX]);
+	int interval = atoi(argv[INTERVAL_IDX]);
 	pid_t other_process_pid = getppid();
 	
 	if (1 == other_process_pid)
 	{
-		
 		execv(argv[CLIENT_PATH_IDX], argv);
+		
+		/* if execv returns - failed */
+		DEBUG_ONLY(Log("wd_launch.c-> InitStruct(): execv() FAILED!\n"););
+		
+		abort();
 	}
 	
-	ExitIfBad(0 != max_misses, FAIL, "wd_launch.c-> InitStruct(): atoi(max_misses) FAILED!\n");
-	ExitIfBad(0 != interval, FAIL, "wd_launch.c-> InitStruct(): atoi(interval) FAILED!\n");
-	ExitIfBad(0 != other_process_pid, FAIL, "wd_launch.c-> InitStruct(): atoi(other_process_pid) FAILED!\n");
+	ExitIfBad(max_misses > 0, FAIL, "wd_launch.c-> InitStruct(): atoi(max_misses) FAILED!\n");
+	ExitIfBad(interval > 0, FAIL, "wd_launch.c-> InitStruct(): atoi(interval) FAILED!\n");
 		
 	/* assert */
 	assert(NULL != wd);
-	assert(argc >= MIN_ARGC);
-		
-	/* initialize struct fields */
-	wd->argc = argc - 4;
-	wd->argv = &argv[4];
-	wd->max_misses = max_misses;
-	wd->interval = interval;
-	wd->client_exec_path = argv[CLIENT_PATH_IDX];
-	wd->other_process_pid = other_process_pid;
 	
 	wd->scheduler = SchedCreate();
 	ExitIfBad(NULL != wd->scheduler, FAIL, "wd_launch.c-> InitStruct(): SchedCreate() FAILED!\n");
+		
+	/* initialize struct fields */
+	wd->argv = &argv[4];
+	wd->max_misses = max_misses;
+	wd->interval = (unsigned long)interval;
+	wd->client_exec_path = argv[CLIENT_PATH_IDX];
+	wd->other_process_pid = other_process_pid;
 }
 
 static void InitSchedulerWD(wd_t* wd)
@@ -105,14 +112,13 @@ static void InitSchedulerWD(wd_t* wd)
 	assert(NULL != wd);
 	
 	now = time(NULL);
-	ExitIfBad(-1 != now, FAIL, "wd_launch.c-> InitSchedulerWD(): time() FAILED!\n");
 	
 	/* add task - send signal */
-	task_uid = SchedAddTask(wd->scheduler, now + wd->interval, SendSignalTaskWD, (void*)wd, NULL, NULL, wd->interval);
+	task_uid = SchedAddTask(wd->scheduler, now, SendSignalTaskWD, wd, NULL, NULL, wd->interval);
 	ExitIfBad(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd_launch.c-> InitSchedulerWD(): AddTask(SendSignal) FAILED!\n");
 	
 	/* add task - check counter */
-	task_uid = SchedAddTask(wd->scheduler, now + wd->interval, CheckCounterTaskWD, (void*)wd, NULL, NULL, wd->interval);
+	task_uid = SchedAddTask(wd->scheduler, now, CheckCounterTaskWD, wd, NULL, NULL, wd->interval);
 	ExitIfBad(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd_launch.c-> InitSchedulerWD(): AddTask(CheckCounter) FAILED!\n");
 }
 
@@ -125,7 +131,7 @@ static int SendSignalTaskWD(void* arg)
 	status = kill(wd->other_process_pid, SIGUSR1);
 	LogIfBad(0 == status, "wd_launch.c-> SendSignalTaskWD(): kill() FAILED!\n");
 
-	Log("WD sent signal to %d (pid)\n", wd->other_process_pid);
+	DEBUG_ONLY(Log("WD sent signal to %d (pid)\n", wd->other_process_pid););
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
@@ -142,9 +148,9 @@ static int CheckCounterTaskWD(void* arg)
 	if (g_counter > wd->max_misses)
 	{
 		/* write to log */
-		Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting!\n");
+		DEBUG_ONLY(Log("wd_launch.c-> CheckCounterTaskWD(): Client didn't respond - exiting!\n"););
 		
-		/* stop scheduler and cleanup  */
+		/* stop scheduler */
 		SchedStop(wd->scheduler);
 		
 		/* call revive client */
@@ -168,17 +174,18 @@ static void ReviveClient(void* arg)
 	LogIfBad(0 == status, "wd_launch.c-> ReviveClient(): kill() FAILED!\n");
 	
 	/* execv() */
-	execvp(wd->client_exec_path, (wd->argv));
+	execv(wd->client_exec_path, (wd->argv));
 	
 	/* if execv returns - failed */
-	/* log */
-	Log("wd_launch.c-> ReviveClient(): execv() FAILED!\n");
+	DEBUG_ONLY(Log("wd_launch.c-> ReviveClient(): execv() FAILED!\n"););
+	
+	abort();
 }
 
 /************************************ Signal Handler ************************************/
 static void SetSignalHandlers()
 {
-	struct sigaction sa;
+	struct sigaction sa = { 0 };
 	int status = 0;
 	
 	memset(&sa, 0, sizeof(sa));

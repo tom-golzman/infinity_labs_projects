@@ -59,7 +59,7 @@ char* StrDup(const char* str);
 #define RET_IF_BAD_SC(statement, return_status, msg) do{ \
     if(0 != statement) \
     { \
-		perror(msg); \
+		fprintf(stderr, "%s %s", msg, strerror(statement)); \
 		return return_status; \
     } \
 } while(0)
@@ -78,7 +78,7 @@ char* StrDup(const char* str);
 #define RET_IF_BAD_SC_CLEAN(statement, return_status, msg, cleanup_call)	do{ \
 	if(0 != statement) \
 	{ \
-		perror(msg); \
+		fprintf(stderr, "%s %s", msg, strerror(statement)); \
 		cleanup_call; \
 		return return_status; \
 	} \

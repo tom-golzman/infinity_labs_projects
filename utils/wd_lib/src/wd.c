@@ -1,7 +1,7 @@
 /**
 	Written By: Tom Golzman
 	Date: 09/07/2025
-	Reviewed By: 
+	Reviewed By: Amir Granot
 **/
 
 /************************************ includes ************************************/
@@ -15,6 +15,7 @@
 #include <pthread.h>	/* pthread_t, pthread_create() */
 #include <errno.h>		/* errno */
 #include <sys/wait.h>	/* waitpid() */
+
 #include "utils.h"		/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 
 #include "scheduler.h"
@@ -25,7 +26,6 @@ enum { WD_PATH_IDX = 0, MAX_MISSES_IDX = 1, INTERVAL_IDX = 2, PID_IDX = 3, NUM_A
 
 typedef struct watchdog
 {
-	int argc;
 	char** new_argv;
 	int max_misses;
 	unsigned long interval;
@@ -33,7 +33,7 @@ typedef struct watchdog
 	const char* wd_exec_path;
 	pid_t other_process_pid; /* wd pid */
 	volatile int* is_first_signal_received;
-	sem_t* sem;
+	sem_t* status_is_ready;
 } wd_t;
 
 /* struct to pass arguments to thread function */
@@ -45,19 +45,22 @@ typedef struct data
 	unsigned long interval;
 	const char* wd_exec_path;
 	volatile int* is_first_signal_received;
-	sem_t* sem;
+	sem_t* status_is_ready;
 } mmi_data_t;
 
 static volatile sig_atomic_t g_counter = 2;
 static volatile int g_is_dnr_received = FALSE;
 static pthread_t g_thread;
+
 /******************************** Private Functions ********************************/
 static void* ThreadFunc(void* arg);
 static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsigned long interval, const char* wd_exec_path);
 static int SemWaitWithTimeout(sem_t* sem, int timeout_sec);
 
-static int InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path, volatile int* is_first_signal_received, sem_t* sem);
-static int InitWDStruct(wd_t* wd, int argc, char* argv[], int max_misses, unsigned long interval, volatile int* is_first_signal_received, sem_t* sem);
+static void InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path,
+							 volatile int* is_first_signal_received, sem_t* status_is_ready);
+static int InitWDStruct(wd_t* wd, char* argv[], int max_misses, unsigned long interval, volatile int* is_first_signal_received,
+						sem_t* status_is_ready);
 
 static int AddInitialTasks(wd_t* wd);
 static int AddMainstreamTasks(wd_t* wd);
@@ -68,7 +71,6 @@ static int CreateWDProcess(char* new_argv[], const char* wd_exec_path);
 static int ReviveWD(wd_t* wd);
 
 static void DestroyArgv(char* argv[]);
-static void DestroySemaphore(sem_t* sem);
 static void DestroyMMI(mmi_data_t* mmi_data);
 static void CleanUpThread(sched_t* scheduler, char* new_argv[]);
 static void CleanupAndUpdateFlag(char* argv[], volatile int* is_first_signal_received, int status);
@@ -91,10 +93,11 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	int status = 0;
 	volatile int is_first_signal_received = FALSE;
 	int sem_timeout_sec = max_misses * interval;
-	sem_t sem = {0};
+	sem_t status_is_ready = {0};
 	
 	/* assert */
-	assert(max_misses > 0);
+	assert(NULL != argv);
+	assert(max_misses > 2);
 	assert(interval > 0);
 	assert(NULL != wd_exec_path);
 	
@@ -107,23 +110,23 @@ int MakeMeImmortal(int argc, char* argv[], int max_misses, unsigned long interva
 	RET_IF_BAD(NULL != mmi_data, FAIL, "wd.c-> MakeMeImmortal(): calloc(mmi_data) FAILED!\n");
 	
 	/* init semaphore */
-	status = sem_init(&sem, 0, 0);
-	RET_IF_BAD_SC(status, FAIL, "wd.c-> MakeMeImmortal(): sem_init() FAILED!\n");
+	status = sem_init(&status_is_ready, 0, 0);
+	RET_IF_BAD(0 == status, FAIL, "wd.c-> MakeMeImmortal(): sem_init() FAILED!\n");
 	
 	/* initialize struct to pass arguments to the thread function */
-	status = InitMMIDataStruct(mmi_data, argc, argv, max_misses, interval, wd_exec_path, &is_first_signal_received, &sem);
-	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): InitMMIDataStruct() FAILED!\n", DestroyMMI(mmi_data));
+	InitMMIDataStruct(mmi_data, argc, argv, max_misses, interval, wd_exec_path, &is_first_signal_received, &status_is_ready);
 	
 	/* create thread */
 	status = pthread_create(&g_thread, NULL, ThreadFunc, mmi_data);
 	RET_IF_BAD_SC_CLEAN(status, FAIL, "wd.c-> MakeMeImmortal(): pthread_create() FAILED!\n", DestroyMMI(mmi_data));
 	
 	/* wait for semaphore */
-	status = SemWaitWithTimeout(&sem, sem_timeout_sec);
-	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): sem_wait() FAILED!\n", pthread_join(g_thread, NULL););
+	status = SemWaitWithTimeout(&status_is_ready, sem_timeout_sec);
+	RET_IF_BAD_CLEAN(FAIL != status, FAIL, "wd.c-> MakeMeImmortal(): sem_wait() FAILED!\n", { sem_destroy(&status_is_ready);
+					 pthread_join(g_thread, NULL); });
 	
 	/* destroy semaphore */
-	DestroySemaphore(&sem);
+	sem_destroy(&status_is_ready);
 	
 	/* return thread status */
 	if (is_first_signal_received)
@@ -141,7 +144,7 @@ int DNR()
 	/* change global flag of DNR to TRUE */
 	__atomic_store_n(&g_is_dnr_received, TRUE, __ATOMIC_SEQ_CST);
 	
-	Log("wd.c-> DNR(): DNR received\n");
+	DEBUG_ONLY(Log("wd.c-> DNR(): DNR received\n"););
 	
 	RET_IF_BAD_SC(pthread_join(g_thread, NULL), FAIL, "wd.c-> DNR(): pthread_join() FAILED!\n");
 	
@@ -152,39 +155,38 @@ static void* ThreadFunc(void* arg)
 {
 	mmi_data_t* mmi_data = (assert(NULL != arg), (mmi_data_t*)arg);
 	char** new_argv = NULL;
-	int new_argc = 0;
 	int status = 0;
-	wd_t wd;
+	wd_t wd = {0};
 	
 	/* recreate argv */
 	new_argv = ReCreateArgv(mmi_data->argc, mmi_data->original_argv, mmi_data->max_misses, mmi_data->interval, mmi_data->wd_exec_path);
-	RET_IF_BAD_CLEAN(NULL != new_argv, NULL, "wd.c-> ThreadFunc(): ReCreateArgv() FAILED!\n", DestroyArgv(new_argv));
-	
-	/* count new argc */
-	while (NULL != new_argv[new_argc])
-	{
-		++new_argc;
-	}
+	RET_IF_BAD_CLEAN(NULL != new_argv, NULL, "wd.c-> ThreadFunc(): ReCreateArgv() FAILED!\n", DestroyMMI(mmi_data));
 	
 	/* initialize wd struct fields */
-	status = InitWDStruct(&wd, new_argc, new_argv, mmi_data->max_misses, mmi_data->interval, mmi_data->is_first_signal_received, mmi_data->sem);
-	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): InitWDStruct() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
+	status = InitWDStruct(&wd, new_argv, mmi_data->max_misses, mmi_data->interval, mmi_data->is_first_signal_received,
+						  mmi_data->status_is_ready);
+	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): InitWDStruct() FAILED!\n", CleanupAndUpdateFlag(new_argv,
+					 mmi_data->is_first_signal_received, FALSE));
 
 	/* set signal handlers */
 	status = SetSignalHandlers();
-	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): SetSignalHandlers() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
+	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): SetSignalHandlers() FAILED!\n", CleanupAndUpdateFlag(new_argv,
+					 mmi_data->is_first_signal_received, FALSE));
 
 	/* unmask signals */
 	status = UnMaskSignals();
-	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): UnMaskSignals() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
+	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): UnMaskSignals() FAILED!\n", CleanupAndUpdateFlag(new_argv,
+					 mmi_data->is_first_signal_received, FALSE));
 
 	/* create wd process & assign wd pid in the wd struct*/
 	wd.other_process_pid = CreateWDProcess(new_argv, new_argv[0]);
-	RET_IF_BAD_CLEAN(FAIL != wd.other_process_pid, NULL, "wd.c-> ThreadFunc(): CreateWDProcess() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
+	RET_IF_BAD_CLEAN(FAIL != wd.other_process_pid, NULL, "wd.c-> ThreadFunc(): CreateWDProcess() FAILED!\n", CleanupAndUpdateFlag(new_argv,
+					 mmi_data->is_first_signal_received, FALSE));
 	
 	/* init client scheduler */
 	status = InitSchedulerClient(&wd);
-	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): InitSchedulerClient() FAILED!\n", CleanupAndUpdateFlag(new_argv, mmi_data->is_first_signal_received, FALSE));
+	RET_IF_BAD_CLEAN(FAIL != status, NULL, "wd.c-> ThreadFunc(): InitSchedulerClient() FAILED!\n", CleanupAndUpdateFlag(new_argv,
+					 mmi_data->is_first_signal_received, FALSE));
 	
 	/* run scheduler */
 	SchedRun(wd.scheduler);
@@ -195,12 +197,13 @@ static void* ThreadFunc(void* arg)
 	return NULL;
 }
 
-static int InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path, volatile int* is_first_signal_received, sem_t* sem)
+static void InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int max_misses, unsigned long interval, const char* wd_exec_path,
+							  volatile int* is_first_signal_received, sem_t* status_is_ready)
 {
 	assert(NULL != mmi_data);
 	assert(NULL != argv);
 	assert(NULL != wd_exec_path);
-	assert(max_misses > 0);
+	assert(max_misses > 2);
 	assert(interval > 0);
 	
 	mmi_data->argc = argc;
@@ -209,9 +212,7 @@ static int InitMMIDataStruct(mmi_data_t* mmi_data, int argc, char* argv[], int m
 	mmi_data->interval = interval;
 	mmi_data->wd_exec_path = wd_exec_path;
 	mmi_data->is_first_signal_received = is_first_signal_received;
-	mmi_data->sem = sem;
-	
-	return SUCCESS;
+	mmi_data->status_is_ready = status_is_ready;
 }
 
 static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsigned long interval, const char* wd_exec_path)
@@ -225,6 +226,8 @@ static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsi
 	/* assert */
 	assert(NULL != original_argv);
 	assert(NULL != wd_exec_path);
+	assert(max_misses > 2);
+	assert(interval > 0);
 	
 	/* convert max_misses to string */
 	sprintf_status = snprintf(misses_str, sizeof(misses_str), "%d", max_misses);	
@@ -265,20 +268,19 @@ static char** ReCreateArgv(int argc, char* original_argv[], int max_misses, unsi
 	return new_argv;
 }
 
-static int InitWDStruct(wd_t* wd, int argc, char* argv[], int max_misses, unsigned long interval, volatile int* is_first_signal_received, sem_t* sem)
+static int InitWDStruct(wd_t* wd, char* argv[], int max_misses, unsigned long interval, volatile int* is_first_signal_received, sem_t* status_is_ready)
 {
 	/* assert */
 	assert(NULL != wd);
 	
 	/* initialize struct fields */
-	wd->argc = argc;
 	wd->new_argv = argv;
 	wd->max_misses = max_misses;
 	wd->interval = interval;
 	wd->wd_exec_path = argv[WD_PATH_IDX];
 	wd->other_process_pid = getpid();
 	wd->is_first_signal_received = is_first_signal_received;
-	wd->sem = sem;
+	wd->status_is_ready = status_is_ready;
 
 	wd->scheduler = SchedCreate();
 	RET_IF_BAD(NULL != wd->scheduler, FAIL, "wd.c-> InitWDStruct(): SchedCreate() FAILED!\n");
@@ -290,16 +292,12 @@ static int InitWDStruct(wd_t* wd, int argc, char* argv[], int max_misses, unsign
 /******************************** phase 1 (init) functions ********************************/
 static int AddInitialTasks(wd_t* wd)
 {
-	time_t now = -1;
+	time_t now = time(NULL);
 	ilrd_uid_t task_uid = invalid_uid;
 	
 	/* assert */
 	assert(NULL != wd);
 	assert(NULL != wd->scheduler);
-
-	/* take current time */
-	now = time(NULL);
-	RET_IF_BAD(-1 != now, FAIL, "wd.c-> AddInitTask(): time(NULL) FAILED!\n");
 
 	/* add task - increment counter */
 	task_uid = SchedAddTask(wd->scheduler, now, WaitFirstSignalTask, wd, NULL, NULL, wd->interval);
@@ -312,16 +310,12 @@ static int AddInitialTasks(wd_t* wd)
 /******************************** phase 2 (mainstream) functions ********************************/
 static int AddMainstreamTasks(wd_t* wd)
 {
-	time_t now = -1;
+	time_t now = time(NULL);
 	ilrd_uid_t task_uid = invalid_uid;
 	
 	/* assert */
 	assert(NULL != wd);
 	
-	/* take current time */
-	now = time(NULL);
-	RET_IF_BAD(-1 != now, FAIL, "wd.c-> AddMainstreamTasks(): time(NULL) FAILED!\n");
-
 	/* add task - check DNR */
 	task_uid = SchedAddTask(wd->scheduler, now, CheckDNRTask, wd, NULL, NULL, wd->interval);
 	RET_IF_BAD(!UIDIsSame(task_uid, invalid_uid), FAIL, "wd.c-> AddMainstreamTasks(): AddTask(CheckDNRTask) FAILED!\n");
@@ -341,15 +335,11 @@ static int AddMainstreamTasks(wd_t* wd)
 /******************************** phase 3 (revival) functions ********************************/
 static int AddRevivalTasks(wd_t* wd)
 {
-	time_t now = -1;
+	time_t now = now = time(NULL);
 	ilrd_uid_t task_uid = invalid_uid;
 	
 	/* assert */
 	assert(NULL != wd);
-	
-	/* take current time */
-	now = time(NULL);
-	RET_IF_BAD(-1 != now, FAIL, "wd.c-> AddRevivalTasks(): time(NULL) FAILED!\n");
 	
 	/* add task - send signal */
 	task_uid = SchedAddTask(wd->scheduler, now, WaitForConnectionTask, wd, NULL, NULL, wd->interval);
@@ -409,7 +399,7 @@ static int ReviveWD(wd_t* wd)
 	
 	/* kill wd process */
 	status = kill(wd->other_process_pid, SIGTERM);
-	RET_IF_BAD_SC(status, FAIL, "wd.c-> ReviveWD(): kill() FAILED!\n");
+	RET_IF_BAD(0 == status, FAIL, "wd.c-> ReviveWD(): kill() FAILED!\n");
 	
 	/* reset g_counter */
 	g_counter = 2;
@@ -437,31 +427,29 @@ static int ReviveWD(wd_t* wd)
 	return SUCCESS;
 }
 
-static int SemWaitWithTimeout(sem_t* sem, int timeout_sec)
+static int SemWaitWithTimeout(sem_t* status_is_ready, int timeout_sec)
 {
 	struct timespec ts = { 0 };
 	int status = 0;
 	
 	/* assign current time into ts struct */
-	clock_gettime(CLOCK_REALTIME, &ts);
+	status = clock_gettime(CLOCK_REALTIME, &ts);
+	RET_IF_BAD(0 == status, FAIL, "wd.c-> SemWaitWithTimeout(): clock_gettime() FAILED!\n");
 	
 	/* add to wait time the timeout */
 	ts.tv_sec += timeout_sec;
 	
 	/* wait the timeout */
-	status = sem_timedwait(sem, &ts);
+	status = sem_timedwait(status_is_ready, &ts);
 	
 	/* handle failure */
 	if (-1 == status)
 	{
 		/* if reached timeout */
-		RET_IF_BAD_CLEAN(ETIMEDOUT == errno, FAIL, "wd.c-> SemWaitWithTimeout(): reached timeout\n", DestroySemaphore(sem));
+		RET_IF_BAD_CLEAN(ETIMEDOUT == errno, FAIL, "wd.c-> SemWaitWithTimeout(): reached timeout\n", sem_destroy(status_is_ready));
 		
 		/* failed for other reason */
 		Log("wd.c-> SemWaitWithTimeout(): sem_timedwait() FAILED!\n");
-		
-		/* destroy semaphore */
-		DestroySemaphore(sem);
 		
 		/* return FAIL */
 		return FAIL;
@@ -512,24 +500,14 @@ static void DestroyArgv(char* argv[])
 	argv = NULL;
 }
 
-static void DestroySemaphore(sem_t* sem)
-{
-	if (NULL == sem)
-	{
-		return;
-	}
-	
-	sem_destroy(sem);
-}
-
 static void DestroyMMI(mmi_data_t* mmi_data)
 {
-	if (NULL == mmi_data)
+	if (NULL == mmi_data || NULL == mmi_data->status_is_ready)
 	{
 		return;
 	}
 
-	DestroySemaphore(mmi_data->sem);
+	sem_destroy(mmi_data->status_is_ready);
 	
 	DEBUG_ONLY(
 		mmi_data->argc = -1;
@@ -537,7 +515,7 @@ static void DestroyMMI(mmi_data_t* mmi_data)
 		mmi_data->max_misses = -1;
 		mmi_data->interval = 0;
 		mmi_data->is_first_signal_received = BAD_MEM(int*);
-		mmi_data->sem = BAD_MEM(sem_t*);
+		mmi_data->status_is_ready = BAD_MEM(sem_t*);
 	);
 	
 	free(mmi_data);
@@ -557,10 +535,14 @@ static int WaitFirstSignalTask(void* arg)
 		*(wd->is_first_signal_received) = TRUE;
 				
 		/* post the semaphore to indicate MMI() that first signal was received */
-		status = sem_post(wd->sem);
-		RET_IF_BAD_SC(status, FAIL, "wd.c-> WaitFirstSignalTask(): sem_post() FAILED!\n");
+		status = sem_post(wd->status_is_ready);
+		RET_IF_BAD(0 == status, FAIL, "wd.c-> WaitFirstSignalTask(): sem_post() FAILED!\n");
 		
 		/* move to mainstream phase: */
+		
+		/* clear scheduler */
+		SchedClear(wd->scheduler);
+		
 		/* add mainstream tasks */
 		status = AddMainstreamTasks(wd);
 		
@@ -653,7 +635,7 @@ static int SendSignalClientTask(void* arg)
 	status = kill(wd->other_process_pid, SIGUSR1);
 	LogIfBad(0 == status, "wd.c-> SendSignalClientTask(): kill() FAILED!\n");
 	
-	Log("Client sent signal to %d (pid)\n", wd->other_process_pid);
+	DEBUG_ONLY(Log("Client sent signal to %d (pid)\n", wd->other_process_pid););
 	
 	/* return TO_RESCHEDULE */
 	return TO_RESCHEDULE;
@@ -710,7 +692,7 @@ static int CheckDNRTask(void* arg)
 		SchedStop(wd->scheduler);
 		
 		/* print to log */
-		Log("wd.c-> CheckDNRTask(): wd process dead and scheduler stopped\n");
+		DEBUG_ONLY(Log("wd.c-> CheckDNRTask(): wd process dead and scheduler stopped\n"););
 		
 		/* return NOT_RESCHEDULE */
 		return NOT_RESCHEDULE;
@@ -732,8 +714,7 @@ static int SetSignalHandlers()
 	sa.sa_handler = HandleSIGUSR1;
 	
 	status = sigaction(SIGUSR1, &sa, NULL);
-	
-	RET_IF_BAD_SC(status, FAIL, "wd.c-> SetSignalHandlers(): sigaction() FAILED!\n");
+	RET_IF_BAD(0 == status, FAIL, "wd.c-> SetSignalHandlers(): sigaction() FAILED!\n");
 
 	return SUCCESS;
 }
@@ -779,4 +760,6 @@ static void HandleSIGUSR1(int sig)
 	
 	/* reset g_counter */
 	g_counter = 0;
+	
+	(void)sig;
 }
