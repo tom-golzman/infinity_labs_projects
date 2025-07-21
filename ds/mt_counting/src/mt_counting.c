@@ -19,7 +19,7 @@
 }
 
 /************************************Functions************************************/
-int main(int argc, char* argv[])
+int MTCounting(const char* file_path)
 {
 	/* local variables: */
 		/* file descriptor, pointer to the file, file size, array of couting arrays, result array,
