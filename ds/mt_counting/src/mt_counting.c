@@ -47,7 +47,6 @@ int MTCounting(const char* file_path, int num_threads)
 	thread_data_t thread_data[MAX_THREADS] = {0};
 	size_t result_array[CHAR_SIZE] = {0};
 	size_t counting_array[MAX_THREADS][CHAR_SIZE] = {0};
-	size_t* counting_array_ptrs[MAX_THREADS] = {0};
 	
 	/* assert */
 	assert(NULL != file_path);
@@ -69,24 +68,17 @@ int MTCounting(const char* file_path, int num_threads)
 	RET_IF_BAD((void*)-1 != file_data, FAIL, "MTCounting(): mmap() FAILED!\n");
 	
 	/* close the file */
-	close(fd);
-	
-	/* memset() 0 in the arrays */
-	memset(counting_array, 0, sizeof(counting_array));
-	memset(result_array, 0, sizeof(result_array));
-	memset(counting_array_ptrs, 0, sizeof(counting_array_ptrs));
+	status = close(fd);
+	LogIfBad(-1 != status, "MTCounting(): close() FAILED!\n");
 	
 	/* for each num of threads */
 	for (i = 0; i < num_threads; ++i)
 	{
-		/* assign in the pointers array a pointer to a counting array */
-		counting_array_ptrs[i] = counting_array[i];
-		
 		/* in the array of thread data, assign in current index the start and end pointers and pointer to
 			a counting array */
 		thread_data[i].start = file_data + (i * section_size);
 		thread_data[i].end = (i == num_threads - 1) ? (file_data + file_size) : (file_data + ((i + 1) * section_size)); /* if its the last thread, assign the end of the file */
-		thread_data[i].counting_array = counting_array_ptrs[i];
+		thread_data[i].counting_array = counting_array[i];
 		
 		/* create a thread */
 		status = pthread_create(&threads[i], NULL, ThreadFunc, &thread_data[i]);
@@ -108,8 +100,9 @@ int MTCounting(const char* file_path, int num_threads)
 	PrintResult(result_array);
 	
 	/* free the mmap (call munmap()) ?? */
-	munmap((void*)file_data, file_size);
-		
+	status = munmap((void*)file_data, file_size);
+	LogIfBad(-1 != status, "MTCounting(): munmap() FAILED!\n");
+
 	/* return SUCCESS */
 	return SUCCESS;
 }
