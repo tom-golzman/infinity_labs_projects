@@ -13,16 +13,29 @@
 enum
 {
 	NUM_WORDS = 2086680,
-	WORDS_ARRAY_COPIES = 5
+	WORDS_ARRAY_COPIES = 5,
+	MAX_THREADS = 20
 };
 
 /* struct to pass argument to the thread */
 {
-	char** array;
-	size_t size;
+	char** input_array;
+	char** merge_array;
+	size_t start;
+	size_t section_size;
 }
 
+static pthread_mutex_t g_merge_mutex = PTHREAD_MUTEX_INITALIZER;
+
 /******************************** Static Functions *********************************/
+static void* ThreadFunc(void* arg_);
+static char* LoadFile(const char* file_path_, size_t* file_size_out_);
+static void FillWordsArray(char** words_, char* buffer_);
+static void DuplicateArray(char** dest_, char** src_, size_t num_words_, size_t num_copies_);
+static void ShuffleArray(char** arr_, size_t size_);
+static int RandomCompare(const void* word1_, const void* word2_);
+static void MergeAllSections(char** dest_, char** src_, size_t total_size_, size_t num_sections_);
+static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_size_, size_t right_size_);
 
 /************************************ Functions ************************************/
 int main()
@@ -32,6 +45,10 @@ int main()
 	/* fill words array from the buffer */
 	
 	/* duplicate words array into a big array */
+	
+	/* shuffle big array */
+	
+	/* calculate section size */
 	
 	/* for each number of threads */
 	{
@@ -45,8 +62,8 @@ int main()
 		/* join the thread */
 	}
 	
-	/* merge section's arrays from all the threads into merged array */
-
+	/* merge all sections */
+	
 	/* return SUCCESS */
 }
 
@@ -67,11 +84,7 @@ static char* LoadFile(const char* file_path_, size_t* file_size_out_)
 	
 	/* calculate file size */
 	
-	/* allocate memory for the buffer */
-	
-	/* read from the file into the buffer */
-	
-	/* add null terminator at the end */
+	/* mmap with the file descriptor */
 	
 	/* close the file */
 	
@@ -81,14 +94,14 @@ static char* LoadFile(const char* file_path_, size_t* file_size_out_)
 static void FillWordsArray(char** words_, char* buffer_)
 {
 	/* assert */
-	
+
 	/* while current char is not the end of the file */
 	{
 		/* if the current char is new line */
 		{
 			/* replace it with 0 */
 			
-			/* assign in words array a pointer to the current word */
+			/* assign in words array a pointer to the next word */
 			
 			/* increment words index */
 		}
@@ -118,16 +131,32 @@ static int RandomCompare(const void* word1_, const void* word2_)
 {
 	/* assert */
 	
-	/* return -1 or 0 or 1 */
+	/* return -1 or 0 or 1 randomly */
 	return (rand() % 3) - 1;
+}
+
+static void MergeAllSections(char** dest_, char** src_, size_t total_size_, size_t num_sections_)
+{
+	/* assert */
+	
+	/* for each section */
+	{
+		/* lock mutex */
+		
+		/* merge arrays into temp array */
+		
+		/* unlock mutex */
+	
+		/* memcpy() the temp array into merged array */
+	}
+	
+	/* memcpy() merged array into dest_ */
 }
 
 static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_size_, size_t right_size_)
 {
 	/* assert */
 
-	/* lock mutex */
-	
 	/* while current left is smaller than left_size and current right is smaller than right_size */
 	{
 		/* if left word is before the right word */
@@ -160,6 +189,4 @@ static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_s
 			
 		/* increment right indexe */
 	}
-	
-	/* unlock mutex */	
 }
