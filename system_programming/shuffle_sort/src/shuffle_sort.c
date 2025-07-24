@@ -9,6 +9,8 @@
 
 #include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 
+#include "shuffle_sort.h"
+
 /************************************* Defines *************************************/
 enum
 {
@@ -20,25 +22,26 @@ enum
 /* struct to pass argument to the thread */
 {
 	char** input_array;
-	char** merge_array;
-	size_t start;
+	char** merged_array;
+	size_t* merged_arr_size;
+	size_t section_start_idx;
 	size_t section_size;
 }
 
-static pthread_mutex_t g_merge_mutex = PTHREAD_MUTEX_INITALIZER;
+static pthread_mutex_t g_merge_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /******************************** Static Functions *********************************/
+int ShuffleSort(const char* file_path_, int num_threads_);
 static void* ThreadFunc(void* arg_);
 static char* LoadFile(const char* file_path_, size_t* file_size_out_);
 static void FillWordsArray(char** words_, char* buffer_);
 static void DuplicateArray(char** dest_, char** src_, size_t num_words_, size_t num_copies_);
 static void ShuffleArray(char** arr_, size_t size_);
 static int RandomCompare(const void* word1_, const void* word2_);
-static void MergeAllSections(char** dest_, char** src_, size_t total_size_, size_t num_sections_);
 static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_size_, size_t right_size_);
 
 /************************************ Functions ************************************/
-int main()
+int ShuffleSort(const char* file_path_, int num_threads_)
 {
 	/* load file into buffer and get file size */
 	
@@ -62,8 +65,6 @@ int main()
 		/* join the thread */
 	}
 	
-	/* merge all sections */
-	
 	/* return SUCCESS */
 }
 
@@ -71,7 +72,15 @@ static void* ThreadFunc(void* arg_)
 {
 	/* assert */
 	
-	/* qsort() with CompareWords() */
+	/* qsort() with CompareWords() the current section */
+	
+	/* lock mutex */
+	
+	/* merge sorted section into merged_array */
+	
+	/* update merged_array size */
+	
+	/* unlock mutex */
 	
 	/* return NULL */
 }
@@ -133,24 +142,6 @@ static int RandomCompare(const void* word1_, const void* word2_)
 	
 	/* return -1 or 0 or 1 randomly */
 	return (rand() % 3) - 1;
-}
-
-static void MergeAllSections(char** dest_, char** src_, size_t total_size_, size_t num_sections_)
-{
-	/* assert */
-	
-	/* for each section */
-	{
-		/* lock mutex */
-		
-		/* merge arrays into temp array */
-		
-		/* unlock mutex */
-	
-		/* memcpy() the temp array into merged array */
-	}
-	
-	/* memcpy() merged array into dest_ */
 }
 
 static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_size_, size_t right_size_)
