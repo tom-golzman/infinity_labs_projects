@@ -14,6 +14,18 @@ void ExitIfBad(int is_good, int exit_status, const char* message)
 	}
 }
 
+void ExitIfBadSC(int statement, int exit_status, const char* message)
+{
+	if(0 != statement)
+	{
+		/* print message to std error */
+		fprintf(stderr, "%s %s", message, strerror(statement));
+		
+		/* exit from the function with exit status */
+		_exit(exit_status);
+	}
+}
+
 void Log(const char* format, ...)
 {
 	va_list args;

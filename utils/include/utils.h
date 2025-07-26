@@ -41,7 +41,8 @@ enum { LOG_BUFF_SIZE = 100 };
 
 /************************************Functions************************************/
 /* systemcalls handling */
-void ExitIfBad(int is_good, int exit_stat, const char* msg);
+void ExitIfBad(int is_good, int exit_status, const char* message);
+void ExitIfBadSC(int statement, int exit_status, const char* message);
 void Log(const char* format, ...);
 void LogIfBad(int is_good, const char* message);
 char* StrDup(const char* str);
