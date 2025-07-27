@@ -19,6 +19,7 @@ ALL_SRCS := $(foreach proj,$(ALL_PROJECTS),$(wildcard $(proj)/src/$(proj).c))
 
 UTILS_INCLUDE = -I ../utils/include
 TEST_UTILS_INCLUDE = -I ../utils/test
+UTILS_SRC := ../utils/src/utils.c
 
 DEBUG_SO := lib/liball_debug.so
 RELEASE_SO := lib/liball_release.so
@@ -39,11 +40,11 @@ test: $(TEST_EXES)
 
 release_test: release $(RELEASE_TEST_EXES)
 
-lib/liball_debug.so: $(ALL_SRCS)
+lib/liball_debug.so: $(ALL_SRCS) $(UTILS_SRC)
 	@mkdir -p lib
 	@$(CC) $(CFLAGS) -g -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
 
-lib/liball_release.so: $(ALL_SRCS)
+lib/liball_release.so: $(ALL_SRCS) $(UTILS_SRC)
 	@mkdir -p lib
 	@$(CC) $(CFLAGS) -O3 -DNDEBUG -shared -o $@ $^ $(ALL_INCLUDE_DIRS) $(UTILS_INCLUDE)
 

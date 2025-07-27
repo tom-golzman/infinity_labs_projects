@@ -37,7 +37,10 @@ cb_t* CBCreate(size_t capacity)
 
 void CBDestroy(cb_t* cb)
 {
-	assert(NULL != cb);
+	if (NULL == cb)
+	{
+		return;
+	}
 	
 	free(cb);
 	cb = NULL;

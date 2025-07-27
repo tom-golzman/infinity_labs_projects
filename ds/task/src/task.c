@@ -32,7 +32,6 @@ task_t* TaskCreate(time_t execution_time, task_action_t action, void* action_par
 	task_t* task = NULL;
 	
 	assert(NULL != action);
-	assert(NULL != cleanup);
 	
 	uid = UIDCreate();
 	if (UIDIsSame(uid, invalid_uid))
@@ -59,7 +58,10 @@ task_t* TaskCreate(time_t execution_time, task_action_t action, void* action_par
 
 void TaskDestroy(task_t* task)
 {
-	assert(NULL != task);
+	if (NULL == task || NULL == task->cleanup)
+	{
+		return;
+	}
 	
 	task->cleanup(task->cleanup_params);
 	

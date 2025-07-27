@@ -124,6 +124,7 @@ static int KnightTourStep(board_t board, position_t position, clock_t start_time
 	
 	/* backtracking */	
 	board = BitArrSetVal(board, position_idx, OFF);
+	
 	return FALSE;
 }
 

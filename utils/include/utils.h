@@ -1,6 +1,15 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+/************************************Includes************************************/
+#include <assert.h>	/* assert() */
+#include <stdio.h>	/* perror(), fputs() */
+#include <string.h>	/* strlen(), strncpy() */
+#include <stdlib.h>	/* malloc() */
+#include <unistd.h>	/* _exit() */
+#include <stdarg.h>	/* va_list, va_start(), va_end(), vfprintf() */
+
+/************************************Define************************************/
 /* trash memory before free */
 #define BAD_MEM32(T)  	((T)0xDEADBEEF)
 #define BAD_MEM64(T)  	((T)0xBADC0FFEE0DDF00D)
@@ -12,20 +21,71 @@
 #endif
 
 /* debug statements */
-
 #ifdef NDEBUG
   	#define DEBUG_ONLY(statements)
 #else
-  	#define DEBUG_ONLY(statements)  do { \
-		statements \
-} while (0)
+  	#define DEBUG_ONLY(statements) \
+	  	do { \
+			statements \
+		} while (0)
 #endif
 
+/************************************enum************************************/
 /* status */
 enum { SUCCESS = 0, FAIL = 1 };
 
 /* boolean */
 enum { FALSE = 0, TRUE = 1 };
 
-#endif /* __UTILS_H__ */
+enum { LOG_BUFF_SIZE = 100 };
 
+/************************************Functions************************************/
+/* systemcalls handling */
+void ExitIfBad(int is_good, int exit_status, const char* message);
+void ExitIfBadSC(int statement, int exit_status, const char* message);
+void Log(const char* format, ...);
+void LogIfBad(int is_good, const char* message);
+char* StrDup(const char* str);
+
+/* return if bad macro */
+#define RET_IF_BAD(is_good, return_status, msg) do{ \
+    if(!(is_good)) \
+    { \
+		perror(msg); \
+		return return_status; \
+    } \
+} while(0)
+
+/* return if bad macro for system calls */
+#define RET_IF_BAD_SC(statement, return_status, msg) do{ \
+    if(0 != statement) \
+    { \
+		fprintf(stderr, "%s %s", msg, strerror(statement)); \
+		return return_status; \
+    } \
+} while(0)
+
+/* return if bad with clean function macro */
+#define RET_IF_BAD_CLEAN(is_good, return_status, msg, cleanup_call)	do{ \
+	if(!(is_good)) \
+	{ \
+		perror(msg); \
+		cleanup_call; \
+		return return_status; \
+	} \
+}while(0)
+
+/* return if bad with clean function macro for system calls */
+#define RET_IF_BAD_SC_CLEAN(statement, return_status, msg, cleanup_call)	do{ \
+	if(0 != statement) \
+	{ \
+		fprintf(stderr, "%s %s", msg, strerror(statement)); \
+		cleanup_call; \
+		return return_status; \
+	} \
+}while(0)
+
+/* macro for using RET_IF_BAD in void functions */
+#define NOTHING
+
+#endif /* __UTILS_H__ */
