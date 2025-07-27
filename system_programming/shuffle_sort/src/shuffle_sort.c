@@ -71,8 +71,7 @@ int ShuffleSort(const char* file_path_, size_t num_threads_)
 	words_buffer = (char**)calloc(NUM_WORDS, sizeof(char*));
 	big_array = (char**)calloc(NUM_WORDS * WORDS_ARRAY_COPIES, sizeof(char*));
 	merged_array = (char**)calloc(NUM_WORDS * WORDS_ARRAY_COPIES, sizeof(char*));
-	RET_IF_BAD(NULL != words_buffer && NULL != big_array && NULL != merged_array, FAIL,
-				"ShuffleSort(): calloc() FAILED!\n");
+	RET_IF_BAD(NULL != words_buffer && NULL != big_array && NULL != merged_array, FAIL, "ShuffleSort(): calloc() FAILED!\n");
 				
 	/* load file into buffer and get file size */
 	mapped_file = LoadFile(file_path_, &file_size);
