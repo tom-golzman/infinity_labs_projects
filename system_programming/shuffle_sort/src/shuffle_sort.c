@@ -35,7 +35,6 @@ typedef struct
 } thread_args_t;
 
 /******************************** Static Functions *********************************/
-int ShuffleSort(const char* file_path_, size_t num_threads_);
 static void* ThreadFunc(void* arg_);
 static char* LoadFile(const char* file_path_, size_t* file_size_out_);
 static void FillWordsArray(char** words_, char* mapped_file_);
@@ -44,10 +43,10 @@ static void ShuffleArray(char** arr_, size_t size_);
 static int CompareWords(const void* word1_, const void* word2_);
 static int RandomCompare(const void* word1_, const void* word2_);
 static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_size_, size_t right_size_);
-static void Cleanup(char** words_buffer, char** big_array, char** merged_array);
+static void Cleanup(char** words_buffer, char** big_array);
 
 /************************************ Functions ************************************/
-int ShuffleSort(const char* file_path_, size_t num_threads_)
+char** ShuffleSort(const char* file_path_, size_t num_threads_)
 {
 	size_t i = 0;
 	size_t file_size = 0;
@@ -71,11 +70,11 @@ int ShuffleSort(const char* file_path_, size_t num_threads_)
 	words_buffer = (char**)calloc(NUM_WORDS, sizeof(char*));
 	big_array = (char**)calloc(NUM_WORDS * WORDS_ARRAY_COPIES, sizeof(char*));
 	merged_array = (char**)calloc(NUM_WORDS * WORDS_ARRAY_COPIES, sizeof(char*));
-	RET_IF_BAD(NULL != words_buffer && NULL != big_array && NULL != merged_array, FAIL, "ShuffleSort(): calloc() FAILED!\n");
+	RET_IF_BAD(NULL != words_buffer && NULL != big_array && NULL != merged_array, NULL, "ShuffleSort(): calloc() FAILED!\n");
 				
 	/* load file into buffer and get file size */
 	mapped_file = LoadFile(file_path_, &file_size);
-	RET_IF_BAD(NULL != mapped_file, FAIL, "ShuffleSort(): LoadFile() FAILED!\n");
+	RET_IF_BAD(NULL != mapped_file, NULL, "ShuffleSort(): LoadFile() FAILED!\n");
 	
 	/* fill words array from the mapped file */
 	FillWordsArray(words_buffer, mapped_file);
@@ -111,10 +110,10 @@ int ShuffleSort(const char* file_path_, size_t num_threads_)
 	}
 	
 	/* cleanup */
-	Cleanup(words_buffer, big_array, merged_array);
+	Cleanup(words_buffer, big_array);
 	
-	/* return SUCCESS */
-	return SUCCESS;
+	/* return merged_array */
+	return merged_array;
 }
 
 static void* ThreadFunc(void* arg_)
@@ -299,47 +298,31 @@ static int RandomCompare(const void* word1_, const void* word2_)
 static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_size_, size_t right_size_)
 {
 	int cmp_result = 0;
-	char** dest_curr = dest_;
-	char** left_curr = left_;
-	char** right_curr = right_;
-	char** left_end = left_ + left_size_;
-	char** right_end = right_ + right_size_;
+	char** dest_curr = dest_ + left_size_ + right_size_ - 1;
+	char** left_curr = left_ + left_size_ - 1;
+	char** right_curr = right_ + right_size_ - 1;
 
 	/* assert */
 	assert(NULL != dest_);
 	assert(NULL != left_);
 	assert(NULL != right_);
 	
-	/* while current left is not end and current right is not end */
-	while (left_curr < left_end && right_curr < right_end)
+	/* while left size is bigger than 0 and right size is bigger than 0 */
+	while (left_size_ > 0 && right_size_ > 0)
 	{
 		cmp_result = strcmp(*left_curr, *right_curr);
 		
-		/* if words are the same */
-		if (0 == cmp_result)
-		{
-			/* copy the smaller pointer into dest */
-			if (*left_curr < *right_curr)
-			{
-				*dest_curr = *left_curr;
-				++left_curr;
-			}
-			
-			else
-			{
-				*dest_curr = *right_curr;
-				++right_curr;
-			}
-		}
-		
-		/* if left word is before the right word */
-		else if (cmp_result < 0)
+		/* if left word is bigger than the right word */
+		if (cmp_result > 0)
 		{
 			/* copy left word into dest */
 			*dest_curr = *left_curr;
 
-			/* increment left_curr */
-			++left_curr;
+			/* decrement left_curr */
+			--left_curr;
+			
+			/* decrement left_size */
+			--left_size_;
 		}
 		
 		/* else */
@@ -347,51 +330,57 @@ static void MergeArrays(char** dest_, char** left_, char** right_, size_t left_s
 			/* copy right word into dest */
 			*dest_curr = *right_curr;
 
-			/* increment right_curr */
-			++right_curr;
+			/* decrement right_curr */
+			--right_curr;
+			
+			/* decrement right_size */
+			--right_size_;
 		}
 		
-		/* increment dest_curr */
-		++dest_curr;
+		/* decrement dest_curr */
+		--dest_curr;
 	}
 
 	/* copy the remaining words: */
 	
-	/* while current left is not end */
-	while (left_curr < left_end)
+	/* while left_size is bigger than 0 */
+	while (left_size_ > 0)
 	{
 		/* copy left word into dest */
 		*dest_curr = *left_curr;
 
-		/* increment left_curr */
-		++left_curr;
-			
-		/* increment dest_curr */
-		++dest_curr;
+		/* decrement left_curr */
+		--left_curr;
+		
+		/* decrement dest_curr */
+		--dest_curr;
+		
+		/* decrement left_size */
+		--left_size_;
 	}
 	
-	/* while current right is not end */
-	while (right_curr < right_end)
+	/* while right_size is bigger than 0 */
+	while (right_size_ > 0)
 	{
 		/* copy right word into dest */
 		*dest_curr = *right_curr;
 
-		/* increment right_curr */
-		++right_curr;
+		/* decrement right_curr */
+		--right_curr;
 		
-		/* increment dest_curr */
-		++dest_curr;
+		/* decrement dest_curr */
+		--dest_curr;
+		
+		/* decrement right_size */
+		--right_size_;
 	}
 }
 
-static void Cleanup(char** words_buffer, char** big_array, char** merged_array)
+static void Cleanup(char** words_buffer, char** big_array)
 {
 	free(words_buffer);
 	words_buffer = NULL;
 
 	free(big_array);
 	big_array = NULL;
-	
-	free(merged_array);
-	merged_array = NULL;
 }

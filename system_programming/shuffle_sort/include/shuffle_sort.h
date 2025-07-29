@@ -8,6 +8,6 @@
 /************************************* Defines *************************************/
 
 /************************************ Functions ************************************/
-int ShuffleSort(const char* file_path_, size_t num_threads_);
+char** ShuffleSort(const char* file_path_, size_t num_threads_);
 
 #endif /*__ILRD_SHUFFLE_SORT_H__*/
