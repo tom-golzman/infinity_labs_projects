@@ -5,7 +5,6 @@
 **/
 
 /************************************ Includes *************************************/
-#define _POSIX_C_SOURCE 200112L
 #include <assert.h>		/* assert() */
 #include <pthread.h>	/* pthread_t, pthread_mutex_t, pthread_create(), pthread_join() */
 #include <fcntl.h>		/* open(), O_RDONLY */
