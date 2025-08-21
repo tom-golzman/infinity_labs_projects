@@ -271,6 +271,48 @@ int Ex2PrintFileContentInRoot(const char* device_path_, const char* file_name_)
 
 	/* open device */
 	device = OpenDevice(device_path_);
+	RET_IF_BAD(NULL != device, FAIL, "Ex2PrintFileContentInRoot(): OpenDevice() FAILED!\n");
+
+	/* read super block */
+	status = ReadSuperBlock(device, &super_block);
+	RET_IF_BAD_CLEAN(SUCCESS == status, FAIL, "Ex2PrintFileContentInRoot(): ReadSuperBlock() FAILED!\n", fclose(device));
+	
+	/* read group descriptor */
+	status = ReadGroupDescriptor(device, &super_block, &group_desc);
+	RET_IF_BAD_CLEAN(SUCCESS == status, FAIL, "Ex2PrintFileContentInRoot(): ReadGroupDescriptor() FAILED!\n", fclose(device));
+
+	/* find inode by file path */
+	status = IsFileInRoot(device, &super_block, &group_desc, file_name_, &file_inode);
+	RET_IF_BAD_CLEAN(TRUE == status, FAIL, "Ex2PrintFileContentInRoot(): file is not in root directory!\n", fclose(device));
+
+	/* print file content */
+	status = PrintInodeContent(device, &super_block, &file_inode);
+	RET_IF_BAD_CLEAN(SUCCESS == status, FAIL, "Ex2PrintFileContentInRoot(): PrintInodeContent() FAILED!\n", fclose(device));
+
+	/* close device */
+	status = fclose(device);
+	RET_IF_BAD(status == 0, FAIL, "Ex2PrintFileContentInRoot(): fclose() FAILED!\n");
+
+	return SUCCESS;
+}
+
+int Ex2PrintFileContent(const char* device_path_, const char* file_path_)
+{
+	FILE* device = NULL;
+	ext2_super_block_t super_block = {0};
+	ext2_group_desc_t group_desc = {0};
+	ext2_inode_t curr_dir_inode = {0};
+    ext2_inode_t file_inode = {0};
+	const char* remaining_path = (assert(NULL != file_path_), file_path_);
+	char next_file_name[ASCII_SIZE];
+	int status = 0;
+
+	/* assert */
+	assert(NULL != device_path_);
+	assert('/' == file_path_[0]);
+
+	/* open device */
+	device = OpenDevice(device_path_);
 	RET_IF_BAD(NULL != device, FAIL, "Ex2PrintFileContent(): OpenDevice() FAILED!\n");
 
 	/* read super block */
@@ -281,19 +323,23 @@ int Ex2PrintFileContentInRoot(const char* device_path_, const char* file_name_)
 	status = ReadGroupDescriptor(device, &super_block, &group_desc);
 	RET_IF_BAD_CLEAN(SUCCESS == status, FAIL, "Ex2PrintFileContent(): ReadGroupDescriptor() FAILED!\n", fclose(device));
 
-	/* find inode by file path */
-	status = IsFileInRoot(device, &super_block, &group_desc, file_name_, &file_inode);
-	RET_IF_BAD_CLEAN(TRUE == status, FAIL, "Ex2PrintFileContent(): file is not in root directory!\n", fclose(device));
+	/* start read inodes from the root */
+	status = ReadInode(device_, &super_block, &group_desc, ROOT_INODE_NUM, &curr_dir_inode);
+	RET_IF_BAD_CLEAN(SUCCESS == status, FAIL, "Ex2PrintFileContent(): ReadInode() FAILED!\n", fclose(device));
 
-	/* print file content */
-	status = PrintInodeContent(device, &super_block, &file_inode);
-	RET_IF_BAD_CLEAN(SUCCESS == status, FAIL, "Ex2PrintFileContent(): PrintInodeContent() FAILED!\n", fclose(device));
+	/* traverse path files */
+	while (1)
+	{
+		remaining_path = NextPathToken(remaining_path, next_file_name);
 
-	/* close device */
-	status = fclose(device);
-	RET_IF_BAD(status == 0, FAIL, "Ex2PrintFileContent(): fclose() FAILED!\n");
+		/* check if there are no more tokens */
+		RET_IF_BAD_CLEAN(next_file_name[0] != '\0', FAIL, "Ex2PrintFileContent(): no more tokens!\n", fclose(device));
 
-	return SUCCESS;
+		/* find the file in the current directory */
+		status = IsFileInDirectory(device, &super_block, &group_desc, &curr_dir_inode, next_file_name, &file_inode);
+		RET_IF_BAD_CLEAN(TRUE == status, FAIL, "Ex2PrintFileContent(): file not found!\n", fclose(device));
+
+	}
 }
 
 /******************************** Static Functions *********************************/
