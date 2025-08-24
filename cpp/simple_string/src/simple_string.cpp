@@ -36,10 +36,10 @@ String& String::operator=(const String& other_)
 	return *this;
 }
 
-bool String::operator==(const String& other_) const
+bool operator==(const String& string1, const String& string2)
 {
-	const char* str1 = m_str;
-	const char* str2 = other_.m_str;
+	const char* str1 = string1.Cstr();
+	const char* str2 = string2.Cstr();
 
 	while ('\0' != *str1 && '\0' != *str2)
 	{
@@ -55,10 +55,10 @@ bool String::operator==(const String& other_) const
 	return ('\0' == *str1 && '\0' == *str2);
 }
 
-bool String::operator<(const String& other_) const
+bool operator<(const String& string1, const String& string2)
 {
-	const char* str1 = m_str;
-	const char* str2 = other_.m_str;
+	const char* str1 = string1.Cstr();
+	const char* str2 = string2.Cstr();
 
 	while ('\0' != *str1 && '\0' != *str2)
 	{
@@ -78,10 +78,10 @@ bool String::operator<(const String& other_) const
 	return ('\0' == *str1 && '\0' != *str2);
 }
 
-bool String::operator>(const String& other_) const
+bool operator>(const String& string1, const String& string2)
 {
-	const char* str1 = m_str;
-	const char* str2 = other_.m_str;
+	const char* str1 = string1.Cstr();
+	const char* str2 = string2.Cstr();
 
 	while ('\0' != *str1 && '\0' != *str2)
 	{
