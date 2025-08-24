@@ -2,8 +2,7 @@
 #define __ILRD_SIMPLE_STRING_H__
 
 /************************************ Includes *************************************/
-#include <cstddef>
-
+#include <cstddef> // size_t
 
 namespace ilrd
 {
@@ -17,7 +16,13 @@ public:
     String(const String& other_);
 
     // assignment operator
-    String& operator = (const String& other_);
+    String& operator=(const String& other_);
+
+    bool operator==(const String& other_) const;
+
+    bool operator<(const String& other_) const;
+
+    bool operator>(const String& other_) const;
 
     // dtor
     ~String();
@@ -27,6 +32,7 @@ public:
 
 private:
     const char* m_str;
+    static const char* CloneStr(const char* str_);
 };
 
 void Foo(String str);
@@ -34,4 +40,4 @@ String Bla();
 
 }//namespace ilrd
 
-#endif /*__ILRD_SIMPLE_STRING_H__*/
+#endif //__ILRD_SIMPLE_STRING_H__

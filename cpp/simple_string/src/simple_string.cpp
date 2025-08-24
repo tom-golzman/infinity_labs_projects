@@ -6,20 +6,17 @@
 
 /************************************ Includes *************************************/
 #include <cassert>	// assert()
-#include <cstring>	// std::strlen, std::strcpy
+#include <cstring>	// std::strlen()
+#include <cstdlib>	// memcpy()
+
+#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 
 #include "simple_string.hpp"
 
-/************************************* Defines *************************************/
+/************************************* *************************************/
 
 namespace ilrd
 {
-/******************************** Static Functions *********************************/
-static void CopyString(char* dest_, const char* src_);
-static size_t StrLen(const char* str_);
-static char* CloneStr(const char* str_);
-
-/************************************ Functions ************************************/
 String::String(const char* str_): m_str(CloneStr(str_))
 {}
 
@@ -28,65 +25,112 @@ String::String(const String& other_): m_str(CloneStr(other_.m_str))
 
 String& String::operator=(const String& other_)
 {
-	delete[] this->m_str;
+	// handles assignment to self
 
-	this->m_str = CloneStr(other_.m_str);
+	const char* temp = CloneStr(other_.m_str);
+	
+	delete[] m_str;
 
+	m_str = temp;
+	
 	return *this;
+}
+
+bool String::operator==(const String& other_) const
+{
+	const char* str1 = m_str;
+	const char* str2 = other_.m_str;
+
+	while ('\0' != *str1 && '\0' != *str2)
+	{
+		if (*str1 != *str2)
+		{
+			return false;
+		}
+
+		++str1;
+		++str2;
+	}
+
+	return ('\0' == *str1 && '\0' == *str2);
+}
+
+bool String::operator<(const String& other_) const
+{
+	const char* str1 = m_str;
+	const char* str2 = other_.m_str;
+
+	while ('\0' != *str1 && '\0' != *str2)
+	{
+		if (*str1 < *str2)
+		{
+			return true;
+		}
+		else if (*str1 > *str2)
+		{
+			return false;
+		}
+
+		++str1;
+		++str2;
+	}
+
+	return ('\0' == *str1 && '\0' != *str2);
+}
+
+bool String::operator>(const String& other_) const
+{
+	const char* str1 = m_str;
+	const char* str2 = other_.m_str;
+
+	while ('\0' != *str1 && '\0' != *str2)
+	{
+		if (*str1 > *str2)
+		{
+			return true;
+		}
+		else if (*str1 < *str2)
+		{
+			return false;
+		}
+
+		++str1;
+		++str2;
+	}
+
+	return ('\0' != *str1 && '\0' == *str2);
 }
 
 String::~String()
 {
-	delete[] this->m_str;
+	delete[] m_str;
+
+	DEBUG_ONLY(
+		m_str = BAD_MEM(char*);
+	);
 }
 
 size_t String::Length() const
 {
-	return StrLen(this->m_str);
+	return strlen(m_str);
 }
 
 const char* String::Cstr() const
 {
-	return this->m_str;
+	return m_str;
 }
 
-static void CopyString(char* dest_, const char* src_)
+//static
+const char* String::CloneStr(const char* str_)
 {
-    char* curr_dest = (assert(NULL != dest_), dest_);
-
-    while (*src_ != '\0')
-    {
-        *curr_dest = *src_;
-    
-		++curr_dest;
-		++src_;
-    }
-
-	*curr_dest = '\0';
-}
-
-static size_t StrLen(const char* str_)
-{
-	size_t length = 0;
-
 	assert(NULL != str_);
+	
+	size_t len = strlen(str_);
+	char* ret = new char[len + 1];
 
-	while (str_[length] != '\0')
-	{
-		++length;
-	}
+	memcpy(ret, str_, len + 1);
 
-	return length;
-}
-
-static char* CloneStr(const char* str_)
-{
-	size_t len = (assert(NULL != str_), StrLen(str_));
-	char* new_str = new char[len + 1];
-
-	CopyString(new_str, str_);
-
-	return new_str;
+	return ret;
 }
 
 }//namespace ilrd
