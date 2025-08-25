@@ -36,6 +36,8 @@ class Complex
 public:
     inline Complex(double real_ = 0.0, double imag_ = 0.0); //non-explicit on purpose
 
+    // generated copy constructor and assignment operator
+
     inline void SetReal(double val_);
     inline void SetImaginary(double val_);
 
@@ -168,39 +170,35 @@ inline std::istream& operator>>(std::istream& is_, Complex& c_)
     double imag = 0.0;
 
     is_ >> ch;
-    if (is_.fail() || '(' != ch)
+    if ('(' != ch)
     {
-        return is_;
+        // fail stream
+        is_.setstate(std::ios_base::failbit);
     }
 
     is_ >> real;
-    if (is_.fail())
-    {
-        return is_;
-    }
 
     is_ >> ch;
-    if (is_.fail() || ',' != ch)
+    if (',' != ch)
     {
-        return is_;
+        // fail stream
+        is_.setstate(std::ios_base::failbit);
     }
 
     is_ >> imag;
-    if (is_.fail())
+
+    is_ >> ch;
+    if ('i' != ch)
     {
-        return is_;
+        // ,fail stream
+        is_.setstate(std::ios_base::failbit);
     }
 
     is_ >> ch;
-    if (is_.fail() || 'i' != ch)
+    if (')' != ch)
     {
-        return is_;
-    }
-
-    is_ >> ch;
-    if (is_.fail() || ')' != ch)
-    {
-        return is_;
+        // fail stream
+        is_.setstate(std::ios_base::failbit);
     }
 
     c_.SetReal(real);
