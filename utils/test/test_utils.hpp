@@ -9,7 +9,6 @@
 /************************************ Titles ************************************/
 #define BOLD       "\033[1m"
 #define BOLD_TITLE "\033[1;4m"
-#define TITLE      "\033[4m"
 
 /************************************ Status ************************************/
 namespace test
@@ -20,5 +19,24 @@ namespace test
         FAIL    = 1
     };
 }
+
+#define RUN_TEST(name, condition)                                          \
+    do {                                                                   \
+        if (condition)                                                     \
+        {                                                                  \
+            std::cout << GREEN << "[PASS] " << RESET << name << std::endl; \
+        }                                                                  \
+        else                                                               \
+        {                                                                  \
+            std::cout << RED << "[FAIL] " << RESET << name << std::endl;   \
+        }                                                                  \
+    } while (0)
+
+#define TITLE(title)                                                       \
+    do {                                                                   \
+        std::cout << std::endl                                             \
+                  << BOLD_TITLE << title << RESET                          \
+                  << std::endl;                                            \
+    } while (0)
 
 #endif /* __TEST_UTILS_HPP__ */
