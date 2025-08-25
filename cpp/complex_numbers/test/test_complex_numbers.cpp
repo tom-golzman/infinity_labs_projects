@@ -1,7 +1,7 @@
 /************************************ Includes *************************************/
 #include <iostream> // std
 
-#include "test_utils.h" /* colors, titles, status, boolean */
+#include "test_utils.hpp" /* colors, titles, status, boolean */
 #include "complex_numbers.hpp"
 
 /************************************* Defines *************************************/
@@ -11,22 +11,13 @@
 /************************************** main ***************************************/
 int main(void)
 {
-	    printf(BOLD_TITLE "\nTest: ()\n" RESET);
+	using namespace test;
 	
-	printf("\n");
+	std::cout << BOLD_TITLE << "Test Results:" << RESET << std::endl;
 	
-	return (0);
+	std::cout << "\n";
+
+	return 0;
 }
 
-	if ()
-	{
-		printf(GREEN "Test 1 PASSED!\n" RESET);
-	}
-	else
-	{
-		printf(RED "Test 1 FAILED!\n" RESET);
-	}
-
 /************************************ Functions ************************************/
-
-

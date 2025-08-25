@@ -1,17 +1,15 @@
 /**
 	Written By: Tom Golzman
 	Date: 25/08/2025
-	Reviewed By: 
+	Reviewed By: Yuval Almog
 **/
 
 /************************************ Includes *************************************/
-#include <assert> // assert()
+#include <cassert> // assert()
 
-#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
+#include "utils.hpp"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM(), ExitIfBad() */
 #include "complex_numbers.hpp"
 
 /************************************* Defines *************************************/
-
-/******************************** Static Functions *********************************/
 
 /************************************ Functions ************************************/
