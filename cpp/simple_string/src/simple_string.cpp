@@ -17,17 +17,17 @@
 
 namespace ilrd
 {
-String::String(const char* str_): m_str(CloneStr(str_))
+String::String(const char* str_): m_str(StrDup(str_))
 {}
 
-String::String(const String& other_): m_str(CloneStr(other_.m_str))
+String::String(const String& other_): m_str(StrDup(other_.m_str))
 {}
 
 String& String::operator=(const String& other_)
 {
-	// handles assignment to self
+	// handles self assignment
 
-	const char* temp = CloneStr(other_.m_str);
+	const char* temp = StrDup(other_.m_str);
 	
 	delete[] m_str;
 
@@ -36,69 +36,19 @@ String& String::operator=(const String& other_)
 	return *this;
 }
 
-bool operator==(const String& string1, const String& string2)
+bool operator==(const String& s1, const String& s2)
 {
-	const char* str1 = string1.Cstr();
-	const char* str2 = string2.Cstr();
-
-	while ('\0' != *str1 && '\0' != *str2)
-	{
-		if (*str1 != *str2)
-		{
-			return false;
-		}
-
-		++str1;
-		++str2;
-	}
-
-	return ('\0' == *str1 && '\0' == *str2);
+	return !(strcmp(s1.Cstr(), s2.Cstr()));
 }
 
-bool operator<(const String& string1, const String& string2)
+bool operator<(const String& s1, const String& s2)
 {
-	const char* str1 = string1.Cstr();
-	const char* str2 = string2.Cstr();
-
-	while ('\0' != *str1 && '\0' != *str2)
-	{
-		if (*str1 < *str2)
-		{
-			return true;
-		}
-		else if (*str1 > *str2)
-		{
-			return false;
-		}
-
-		++str1;
-		++str2;
-	}
-
-	return ('\0' == *str1 && '\0' != *str2);
+	return (strcmp(s1.Cstr(), s2.Cstr()) < 0);
 }
 
-bool operator>(const String& string1, const String& string2)
+bool operator>(const String& s1, const String& s2)
 {
-	const char* str1 = string1.Cstr();
-	const char* str2 = string2.Cstr();
-
-	while ('\0' != *str1 && '\0' != *str2)
-	{
-		if (*str1 > *str2)
-		{
-			return true;
-		}
-		else if (*str1 < *str2)
-		{
-			return false;
-		}
-
-		++str1;
-		++str2;
-	}
-
-	return ('\0' != *str1 && '\0' == *str2);
+	return (strcmp(s1.Cstr(), s2.Cstr()) > 0);
 }
 
 String::~String()
@@ -121,7 +71,7 @@ const char* String::Cstr() const
 }
 
 //static
-const char* String::CloneStr(const char* str_)
+const char* String::StrDup(const char* str_)
 {
 	assert(NULL != str_);
 	

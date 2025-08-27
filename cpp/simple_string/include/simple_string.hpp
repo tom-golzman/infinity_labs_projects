@@ -9,9 +9,9 @@ namespace ilrd
 
 class String;
 
-bool operator==(const String& string1, const String& string2);
-bool operator<(const String& string1, const String& string2);
-bool operator>(const String& string1, const String& string2);
+bool operator==(const String& s1, const String& s2);
+bool operator<(const String& s1, const String& s2);
+bool operator>(const String& s1, const String& s2);
 
 class String
 {
@@ -33,7 +33,7 @@ public:
 
 private:
     const char* m_str;
-    static const char* CloneStr(const char* str_);
+    static const char* StrDup(const char* str_);
 };
 
 }//namespace ilrd
