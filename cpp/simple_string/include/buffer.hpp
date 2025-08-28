@@ -29,7 +29,7 @@ private:
     T* m_arr;
     size_t m_size;
 
-    static T* AllocAndCopy(T* other_arr_, size_t other_size);
+    static T* AllocAndCopy(const Buffer<T>& buff_);
 };
 
 template <typename T>
@@ -37,7 +37,7 @@ Buffer<T>::Buffer(size_t size_): m_arr(new T[size_]), m_size(size_)
 {}
 
 template <typename T>
-Buffer<T>::Buffer(const Buffer& other_): m_arr(AllocAndCopy(other_.m_arr, other_.m_size)), m_size(other_.m_size)
+Buffer<T>::Buffer(const Buffer& other_): m_arr(AllocAndCopy(other_)), m_size(other_.m_size)
 {}
 
 template <typename T>
@@ -46,7 +46,7 @@ Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
 	// handles self assignment
 
     // DANGER ZONE
-	T* temp = AllocAndCopy(other_.m_arr, other_.m_size);
+	T* temp = AllocAndCopy(other_);
     
     delete[] m_arr;
 	m_arr = temp;
@@ -88,13 +88,13 @@ size_t Buffer<T>::Size() const NOEXCEPT
 
 //static
 template <typename T>
-T* Buffer<T>::AllocAndCopy(T* other_arr_, size_t other_size)
+T* Buffer<T>::AllocAndCopy(const Buffer<T>& buff_)
 {
-    T* ret = new T[other_size];
+    T* ret = new T[buff_.m_size];
 
     try
     {
-        std::copy(other_arr_, other_arr_ + other_size, ret);
+        std::copy(buff_.m_arr, buff_.m_arr + buff_.m_size, ret);
     }
 
     catch(...)
