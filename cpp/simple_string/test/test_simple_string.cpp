@@ -3,10 +3,6 @@
 
 #include "simple_string.hpp"
 
-/************************************* Defines *************************************/
-
-/************************** Functions Forward Decleration **************************/
-
 /************************************** main ***************************************/
 int main(void)
 {
@@ -56,5 +52,13 @@ int main(void)
 		
 	std::cout << "s4 > s4(0): " << (s4 > s4) << std::endl;
 	
+	String s8 = "Hello";
+
+	std::cout << "s8 before (Hello): " << s8.Cstr() << std::endl;
+
+	s8[4] = '!';
+
+	std::cout << "s8 after (Hell!): " << s8.Cstr() << std::endl;
+
 	return (0);
 }
