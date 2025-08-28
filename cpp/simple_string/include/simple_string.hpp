@@ -2,8 +2,9 @@
 #define __ILRD_SIMPLE_STRING_H__
 
 /************************************ Includes *************************************/
-#include <cstddef> // size_t
+#include <cstddef>      // size_t
 
+#include "buffer.hpp"   // class Buffer
 #include "utils.hpp"	// SUCCESS, FAIL, DEBUG_ONLY(), BAD_MEM(), NOEXCEPT, OVERRIDE
 
 namespace ilrd
@@ -15,55 +16,22 @@ bool operator==(const String& s1, const String& s2);
 bool operator<(const String& s1, const String& s2);
 bool operator>(const String& s1, const String& s2);
 
-class StringManager
-{
-public:
-    // constructor
-    StringManager(const char* str_); //non explicit on purpose
-    //TODO: i think this constructor can be explicit
-    
-    // copy ctor
-    StringManager(const StringManager& other_);
-    
-    // assignment operator
-    StringManager& operator=(const StringManager& other_);
-    
-    char& operator[](size_t index) const;
-
-    // dtor
-    ~StringManager() NOEXCEPT;
-
-    size_t Length() const;
-    const char* Cstr() const;
-
-private:
-    char* m_str;
-    static char* StrDup(const char* str_);
-};
-
 class String
 {
 public:
     // constructor
     String(const char* str_); //non explicit on purpose
     
-    // copy ctor
-    String(const String& other_);
+    // generated copy ctor, assignment operator, dtor
+
+    char& operator[](size_t index);
+    char operator[](size_t index) const;
     
-    // assignment operator
-    String& operator=(const String& other_);
-    
-    // dtor
-    ~String() NOEXCEPT
-    {}
-    
-    char& operator[](size_t index) const;
-    
-    size_t Length() const;
+    size_t Length() const NOEXCEPT;
     const char* Cstr() const;
 
 private:
-    StringManager m_data;
+    Buffer<char> m_buff;
 };
 
 }//namespace ilrd

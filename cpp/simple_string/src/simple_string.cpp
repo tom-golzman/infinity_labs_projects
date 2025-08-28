@@ -14,99 +14,40 @@
 /************************************* *************************************/
 namespace ilrd
 {
-//================== StringManager ================== //
-StringManager::StringManager(const char* str_): m_str(StrDup(str_))
-{}
-
-StringManager::StringManager(const StringManager& other_): m_str(StrDup(other_.m_str))
-{}
-
-StringManager& StringManager::operator=(const StringManager& other_)
-{
-	// handles self assignment
-
-	char* temp = StrDup(other_.m_str);
-	
-	delete[] m_str;
-
-	m_str = temp;
-
-	return *this;
-}
-
-StringManager::~StringManager() NOEXCEPT
-{
-	delete[] m_str;
-
-	DEBUG_ONLY(
-		m_str = BAD_MEM(char*);
-	);
-}
-
-char& StringManager::operator[](size_t index)
-{
-	assert(index < Length());
-
-	return m_str[index];
-}
-
-size_t StringManager::Length() const
-{
-	return strlen(m_str);
-}
-
-const char* StringManager::Cstr() const
-{
-	return m_str;
-}
-
-//static
-char* StringManager::StrDup(const char* str_)
-{
-	assert(NULL != str_);
-	
-	size_t len = strlen(str_);
-	char* ret = new char[len + 1];
-
-	memcpy(ret, str_, len + 1);
-
-	return ret;
-}
-
 //====================== String ===================== //
-String::String(const char* str_): m_data(str_)
-{}
-
-String::String(const String& other_): m_data(other_.m_data)
-{}
-
-String& String::operator=(const String& other_)
+String::String(const char* str_): m_buff(strlen(str_) + 1)
 {
-	// handles self assignment
+	char* buff = m_buff.GetW();
 
-	StringManager temp = other_.m_data;
-	
-	m_data = temp;
-	//TODO: no need for temp
-	
-	return *this;
+	memcpy(buff, str_, strlen(str_) + 1);
 }
 
 char& String::operator[](size_t index)
 {
-	assert(index < Length());
+	assert(index < m_buff.Size() - 1);
 
-	return m_data[index];
+	char* buff = m_buff.GetW();
+
+	return buff[index];
 }
 
-size_t String::Length() const
+char String::operator[](size_t index) const
 {
-	return m_data.Length();
+	assert(index < m_buff.Size() - 1);
+
+	const char* buff = m_buff.GetR();
+
+	return buff[index];
+}
+
+size_t String::Length() const NOEXCEPT
+{
+	return m_buff.Size() - 1;
 }
 
 const char* String::Cstr() const
 {
-	return m_data.Cstr();
+	return m_buff.GetR();
 }
 
 //====================== Global Operators ===================== //
