@@ -2,12 +2,15 @@
 #define __ILRD_BUFFER_H__
 
 /************************************ Includes *************************************/
-#include <cstddef> // size_t
+#include <algorithm>    // std::copy()
 
 #include "utils.hpp"	// SUCCESS, FAIL, DEBUG_ONLY(), BAD_MEM(), NOEXCEPT, OVERRIDE
 
 namespace ilrd
 {
+
+template <typename T>
+T* AllocAndCopy (T* other_arr_, size_t other_size);
 
 template <typename T>
 class Buffer
@@ -23,29 +26,46 @@ public:
     const T* GetR() const;
     T* GetW();
 
+    size_t Size() const;
+
 private:
     T* m_arr;
     size_t m_size;
 };
 
-Buffer::Buffer(size_t size_): m_arr(new T[size_]), m_size(size_)
-{}
-
-Buffer::Buffer(const Buffer& other_): m_arr(new T[other_.m_size]), m_size(other.m_size)
+template <typename T>
+T* AllocAndCopy(T* other_arr_, size_t other_size)
 {
-    memcopy(m_arr, other_.m_arr, other_.m_size * sizeof(T));
+    T* new_arr = new T[other_size];
+
+    try
+    {
+        std::copy(other_arr_, other_arr_ + other_size, new_arr);
+    }
+
+    catch(...)
+    {
+        delete[] new_arr;
+    }
+
+    return new_arr;
 }
 
-Buffer& Buffer::operator=(const Buffer& other_)
+template <typename T>
+Buffer<T>::Buffer(size_t size_): m_arr(new T[size_]), m_size(size_)
+{}
+
+template <typename T>
+Buffer<T>::Buffer(const Buffer& other_): m_arr(AllocAndCopy(other_.m_arr, other_.m_size)), m_size(other_.m_size)
+{}
+
+template <typename T>
+Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
 {
 	// handles self assignment
 
     // DANGER ZONE
-	T* temp = new T[other_.m_size];
-
-    memcpy(temp, other_.m_arr, other_.m_size * sizeof(T));
-	
-	delete[] m_arr;
+	T* temp = AllocAndCopy(other_.m_arr, other_.m_size);
 
 	m_arr = temp;
     m_size = other_.m_size;
@@ -55,23 +75,33 @@ Buffer& Buffer::operator=(const Buffer& other_)
     return *this;
 }
 
-Buffer::~Buffer() NOEXCEPT
+template <typename T>
+Buffer<T>::~Buffer() NOEXCEPT
 {
     delete[] m_arr;
 
     DEBUG_ONLY(
         m_arr = BAD_MEM(T*);
+        m_size = 0;
     );
 }
 
-const T* GetR() const
+template <typename T>
+const T* Buffer<T>::GetR() const
 {
     return m_arr;
 }
 
-T* GetW()
+template <typename T>
+T* Buffer<T>::GetW()
 {
     return m_arr;
+}
+
+template <typename T>
+size_t Buffer<T>::Size() const
+{
+    return m_size;
 }
 
 }//namespace ilrd
