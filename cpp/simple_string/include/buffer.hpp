@@ -10,9 +10,6 @@ namespace ilrd
 {
 
 template <typename T>
-T* AllocAndCopy (T* other_arr_, size_t other_size);
-
-template <typename T>
 class Buffer
 {
 public:
@@ -26,30 +23,14 @@ public:
     const T* GetR() const;
     T* GetW();
 
-    size_t Size() const;
+    size_t Size() const NOEXCEPT;
 
 private:
     T* m_arr;
     size_t m_size;
+
+    static T* AllocAndCopy(T* other_arr_, size_t other_size);
 };
-
-template <typename T>
-T* AllocAndCopy(T* other_arr_, size_t other_size)
-{
-    T* new_arr = new T[other_size];
-
-    try
-    {
-        std::copy(other_arr_, other_arr_ + other_size, new_arr);
-    }
-
-    catch(...)
-    {
-        delete[] new_arr;
-    }
-
-    return new_arr;
-}
 
 template <typename T>
 Buffer<T>::Buffer(size_t size_): m_arr(new T[size_]), m_size(size_)
@@ -66,7 +47,8 @@ Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
 
     // DANGER ZONE
 	T* temp = AllocAndCopy(other_.m_arr, other_.m_size);
-
+    
+    delete[] m_arr;
 	m_arr = temp;
     m_size = other_.m_size;
     
@@ -99,9 +81,30 @@ T* Buffer<T>::GetW()
 }
 
 template <typename T>
-size_t Buffer<T>::Size() const
+size_t Buffer<T>::Size() const NOEXCEPT
 {
     return m_size;
+}
+
+//static
+template <typename T>
+T* Buffer<T>::AllocAndCopy(T* other_arr_, size_t other_size)
+{
+    T* ret = new T[other_size];
+
+    try
+    {
+        std::copy(other_arr_, other_arr_ + other_size, ret);
+    }
+
+    catch(...)
+    {
+        delete[] ret;
+
+        throw;
+    }
+
+    return ret;
 }
 
 }//namespace ilrd
