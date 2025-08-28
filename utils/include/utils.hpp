@@ -14,6 +14,14 @@
     #define BAD_MEM(T)   (BAD_MEM32(T)) /* fallback */
 #endif
 
+#if __cplusplus<201104
+#define NOEXCEPT throw()
+#define OVERRIDE
+#else
+#define NOEXCEPT noexcept
+#define OVERRIDE override
+#endif //#if __cplusplus<201104
+
 /************************************ Debug ************************************/
 #ifdef NDEBUG
     #define DEBUG_ONLY(statements)
