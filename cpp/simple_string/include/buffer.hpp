@@ -27,11 +27,11 @@ public:
     size_t Size() const NOEXCEPT;
 
 private:
-    BufferData* m_data;
+    BufferData<T>* m_data;
 };
 
 template <typename T>
-Buffer<T>::Buffer(size_t size_): m_data(BufferData::AllocateBuff(size_ * sizeof(T)))
+Buffer<T>::Buffer(size_t size_): m_data(BufferData<T>::AllocateBuff(size_))
 {}
 
 template <typename T>
@@ -46,7 +46,7 @@ Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
 	// handles self assignment
 
     // DANGER ZONE
-	BufferData* temp = other_.m_data;
+	BufferData<T>* temp = other_.m_data;
     
     temp->Attach();
 
@@ -65,20 +65,22 @@ Buffer<T>::~Buffer() NOEXCEPT
     m_data->Detach();
 
     DEBUG_ONLY(
-        m_data = BAD_MEM(BufferData*);
+        m_data = BAD_MEM(BufferData<T>*);
     );
 }
 
 template <typename T>
 const T* Buffer<T>::GetR() const
 {
-    return reinterpret_cast<const T*>(m_data->GetBuff());
+    return m_data->GetBuff();
 }
 
 template <typename T>
 T* Buffer<T>::GetW()
 {
-    return reinterpret_cast<T*>(m_data->GetBuff());
+    m_data = m_data->GetUniqueBuff();
+
+    return m_data->GetBuff();
 }
 
 template <typename T>

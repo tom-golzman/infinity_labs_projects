@@ -8,39 +8,43 @@
 
 #include "utils.hpp"	// SUCCESS, FAIL, DEBUG_ONLY(), BAD_MEM(), NOEXCEPT, OVERRIDE
 
-/************************************ namespace ilrd *************************************/
-
 namespace ilrd
 {
 
+template <typename T>
 class BufferData
 {
 public:
-    inline static BufferData* AllocateBuff(size_t size_);
-    inline void Attach();
-    inline void Detach();
+    static BufferData<T>* AllocateBuff(size_t size_);
+    void Attach();
+    void Detach();
     
-    inline char* GetBuff();
-    inline const char* GetBuff() const;
+    T* GetBuff();
+    const T* GetBuff() const;
+    BufferData<T>* GetUniqueBuff();
     
-    inline size_t Size() const NOEXCEPT;
+    size_t Size() const NOEXCEPT;
     
 private:
     size_t m_size;
     size_t m_rc;
-    char m_arr[1];
+    T m_arr[1];
     
-    inline explicit BufferData(size_t size_);
-    inline ~BufferData() NOEXCEPT;
+    explicit BufferData(size_t size_);
+    ~BufferData() NOEXCEPT;
     
-    BufferData(const BufferData&);
-    BufferData& operator=(const BufferData&);
+    BufferData(const BufferData<T>&);
+    BufferData<T>& operator=(const BufferData<T>&);
 };
 
-inline BufferData::BufferData(size_t size_): m_size(size_), m_rc(1)
+//=================== Implementation ===================//
+
+template <typename T>
+BufferData<T>::BufferData(size_t size_): m_size(size_), m_rc(1)
 {}
 
-inline BufferData::~BufferData() NOEXCEPT
+template <typename T>
+BufferData<T>::~BufferData() NOEXCEPT
 {
     DEBUG_ONLY(
         m_size = BAD_MEM(size_t);
@@ -48,47 +52,77 @@ inline BufferData::~BufferData() NOEXCEPT
     );
 }
 
-//static
-inline BufferData* BufferData::AllocateBuff(size_t size_)
+// static
+template <typename T>
+BufferData<T>* BufferData<T>::AllocateBuff(size_t size_)
 {
-    size_t total_size = sizeof(BufferData) + ((size_ - 1) * sizeof(char));
+    size_t total_size = sizeof(BufferData) + ((size_ - 1) * sizeof(T));
     void* ret = operator new(total_size);
 
     return new(ret) BufferData(size_);
 }
 
-inline void BufferData::Attach()
+template <typename T>
+void BufferData<T>::Attach()
 {
     ++m_rc;
 }
 
-inline void BufferData::Detach()
+template <typename T>
+void BufferData<T>::Detach()
 {
     assert(m_rc > 0);
 
     --m_rc;
 
-    if(0 == m_rc)
+    if(0 == m_rc) //buffer isn't shared
     {
-        delete this;
+        delete this; //operator delete??
     }
 }
 
-inline char* BufferData::GetBuff()
+template <typename T>
+T* BufferData<T>::GetBuff()
 {
     return m_arr;
 }
 
-inline const char* BufferData::GetBuff() const
+template <typename T>
+const T* BufferData<T>::GetBuff() const
 {
     return m_arr;
 }
 
-inline size_t BufferData::Size() const NOEXCEPT
+template <typename T>
+BufferData<T>* BufferData<T>::GetUniqueBuff()
+{
+    if(1 == m_rc) //buffer isn't shared
+    {
+        return this;
+    }
+
+    BufferData<T>* ret = AllocateBuff(m_size);
+
+    try
+    {
+        std::copy(m_arr, m_arr + m_size, ret->m_arr);
+    }
+
+    catch(...)
+    {
+        delete ret; //operator delete??
+        throw;
+    }
+
+    return ret;
+}
+
+template <typename T>
+size_t BufferData<T>::Size() const NOEXCEPT
 {
     return m_size;
 }
 
-}//namespace ilrd
+} // namespace ilrd
 
 #endif //__ILRD_BUFFER_DATA_HPP__
