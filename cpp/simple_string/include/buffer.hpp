@@ -2,9 +2,10 @@
 #define __ILRD_BUFFER_H__
 
 /************************************ Includes *************************************/
-#include <algorithm>    // std::copy()
+#include <algorithm>        // std::copy()
 
-#include "utils.hpp"	// SUCCESS, FAIL, DEBUG_ONLY(), BAD_MEM(), NOEXCEPT, OVERRIDE
+#include "buffer_data.hpp"  // class BufferData
+#include "utils.hpp"	    // SUCCESS, FAIL, DEBUG_ONLY(), BAD_MEM(), NOEXCEPT, OVERRIDE
 
 namespace ilrd
 {
@@ -26,19 +27,18 @@ public:
     size_t Size() const NOEXCEPT;
 
 private:
-    T* m_arr;
-    size_t m_size;
-
-    static T* AllocAndCopy(const Buffer<T>& buff_);
+    BufferData* m_data;
 };
 
 template <typename T>
-Buffer<T>::Buffer(size_t size_): m_arr(new T[size_]), m_size(size_)
+Buffer<T>::Buffer(size_t size_): m_data(BufferData::AllocateBuff(size_ * sizeof(T)))
 {}
 
 template <typename T>
-Buffer<T>::Buffer(const Buffer& other_): m_arr(AllocAndCopy(other_)), m_size(other_.m_size)
-{}
+Buffer<T>::Buffer(const Buffer& other_): m_data(other_.m_data)
+{
+    m_data->Attach();
+}
 
 template <typename T>
 Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
@@ -46,12 +46,14 @@ Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
 	// handles self assignment
 
     // DANGER ZONE
-	T* temp = AllocAndCopy(other_);
+	BufferData* temp = other_.m_data;
     
-    delete[] m_arr;
-	m_arr = temp;
-    m_size = other_.m_size;
+    temp->Attach();
+
+    m_data->Detach();
     
+    m_data = temp;
+
     // end of DANGER ZONE
 	
     return *this;
@@ -60,51 +62,29 @@ Buffer<T>& Buffer<T>::operator=(const Buffer& other_)
 template <typename T>
 Buffer<T>::~Buffer() NOEXCEPT
 {
-    delete[] m_arr;
+    m_data->Detach();
 
     DEBUG_ONLY(
-        m_arr = BAD_MEM(T*);
-        m_size = 0;
+        m_data = BAD_MEM(BufferData*);
     );
 }
 
 template <typename T>
 const T* Buffer<T>::GetR() const
 {
-    return m_arr;
+    return reinterpret_cast<const T*>(m_data->GetBuff());
 }
 
 template <typename T>
 T* Buffer<T>::GetW()
 {
-    return m_arr;
+    return reinterpret_cast<T*>(m_data->GetBuff());
 }
 
 template <typename T>
 size_t Buffer<T>::Size() const NOEXCEPT
 {
-    return m_size;
-}
-
-//static
-template <typename T>
-T* Buffer<T>::AllocAndCopy(const Buffer<T>& buff_)
-{
-    T* ret = new T[buff_.m_size];
-
-    try
-    {
-        std::copy(buff_.m_arr, buff_.m_arr + buff_.m_size, ret);
-    }
-
-    catch(...)
-    {
-        delete[] ret;
-
-        throw;
-    }
-
-    return ret;
+    return m_data->Size() / sizeof(T);
 }
 
 }//namespace ilrd

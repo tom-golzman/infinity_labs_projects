@@ -19,12 +19,12 @@ String::String(const char* str_): m_buff(strlen(str_) + 1)
 {
 	char* buff = m_buff.GetW();
 
-	memcpy(buff, str_, strlen(str_) + 1);
+	std::copy(str_, str_ + m_buff.Size(), buff);
 }
 
 char& String::operator[](size_t index)
 {
-	assert(index < m_buff.Size() - 1);
+	assert(index < Length());
 
 	char* buff = m_buff.GetW();
 
@@ -33,7 +33,7 @@ char& String::operator[](size_t index)
 
 char String::operator[](size_t index) const
 {
-	assert(index < m_buff.Size() - 1);
+	assert(index < Length());
 
 	const char* buff = m_buff.GetR();
 
