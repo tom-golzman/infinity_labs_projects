@@ -9,6 +9,7 @@
 #include <stdlib.h> /* malloc */
 
 #include "task.h"
+#include "utils.h"
 
 /************************************define************************************/
 #define SUCCESS (0)
