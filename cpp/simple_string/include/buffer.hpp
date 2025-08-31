@@ -46,7 +46,7 @@ private:
             size_t Size() const NOEXCEPT;
             
         private:
-            size_t m_size;
+            const size_t m_size;
             size_t m_rc;
             T m_arr[1];
             
