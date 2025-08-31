@@ -1,12 +1,10 @@
-/************************************ Includes *************************************/
-#include <cstring>			// strcmp()
+#include <cstring>
 #include <iostream>
 
-#include "test_utils.hpp"	// RUN_TEST, colors, titles, status
+#include "test_utils.hpp"
 
 #include "simple_string.hpp"
 
-/******************************* Forward Declaration ********************************/
 void TestCtor();
 void TestLength();
 void TestAssignOp();
@@ -14,10 +12,10 @@ void TestOpEq();
 void TestOpSmall();
 void TestOpBig();
 void TestOp();
+void TestGetAndSetAt();
 
 using ilrd::String;
 
-/************************************** main ***************************************/
 int main(void)
 {
 	TestCtor();
@@ -27,7 +25,8 @@ int main(void)
 	TestOpSmall();
 	TestOpBig();
 	TestOp();
-	
+	TestGetAndSetAt();
+
 	return (0);
 }
 
@@ -119,7 +118,22 @@ void TestOp()
 
 	String s8 = "Hello";
 
-	s8[4] = '!';
+	RUN_TEST("s8[0] = 'H'", s8[0] == 'H');
 
-	RUN_TEST("s8 after s8[4] = '!'", strcmp(s8.Cstr(), "Hell!") == 0);
+	s8[1] = 'A';
+
+	RUN_TEST("after s8[1] = 'A'", strcmp(s8.Cstr(), "HAllo") == 0);
+}
+
+void TestGetAndSetAt()
+{
+	TITLE("GetAt()");
+
+	String s9 = "Hello";
+
+	RUN_TEST("s9.GetAt(1) == 'e'", s9.GetAt(1) == 'e');
+
+	s9.SetAt(2, '!');
+
+	RUN_TEST("s9.SetAt(2, '!')", strcmp(s9.Cstr(), "He!lo") == 0);
 }

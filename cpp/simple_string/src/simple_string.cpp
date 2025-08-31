@@ -1,20 +1,17 @@
 /**
 	Written By: Tom Golzman
 	Date: 21/08/2025
-	Reviewed By: Sami
 **/
 
-/*********************************** Includes ************************************/
-#include <cassert>		// assert()
-#include <cstring>		// std::strlen()
-#include <cstdlib>		// memcpy()
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
 
 #include "simple_string.hpp"
 
-/************************************* *************************************/
 namespace ilrd
 {
-//====================== String ===================== //
+
 String::String(const char* str_): m_buff(strlen(str_) + 1)
 {
 	char* buff = m_buff.GetW();
@@ -22,22 +19,33 @@ String::String(const char* str_): m_buff(strlen(str_) + 1)
 	std::copy(str_, str_ + m_buff.Size(), buff);
 }
 
-char& String::operator[](size_t index)
+String::CharProxy String::operator[](size_t index_)
 {
-	assert(index < Length());
+	assert(index_ < Length());
 
-	char* buff = m_buff.GetW();
-
-	return buff[index];
+	return CharProxy(index_, m_buff);
 }
 
-char String::operator[](size_t index) const
+char String::operator[](size_t index_) const
 {
-	assert(index < Length());
+	assert(index_ < Length());
 
-	const char* buff = m_buff.GetR();
+    return m_buff.GetR()[index_];
+}
 
-	return buff[index];
+void String::SetAt(size_t index_, const char c_)
+{
+    assert(index_ < Length());
+
+	char* buff = m_buff.GetW();
+    buff[index_] = c_;
+}
+
+char String::GetAt(size_t index_) const
+{
+    assert(index_ < Length());
+
+    return m_buff.GetR()[index_];
 }
 
 size_t String::Length() const NOEXCEPT
@@ -50,20 +58,37 @@ const char* String::Cstr() const
 	return m_buff.GetR();
 }
 
-//====================== Global Operators ===================== //
-bool operator==(const String& s1, const String& s2)
+String::CharProxy::CharProxy(size_t index_, Buffer<char>& buff_): m_index(index_), m_proxy_buff(buff_)
 {
-	return !(strcmp(s1.Cstr(), s2.Cstr()));
+    assert(index_ < m_proxy_buff.Size() - 1);
 }
 
-bool operator<(const String& s1, const String& s2)
+String::CharProxy& String::CharProxy::operator=(const char c_)
 {
-	return (strcmp(s1.Cstr(), s2.Cstr()) < 0);
+    char* buff = m_proxy_buff.GetW();
+    buff[m_index] = c_;
+    
+    return *this;
 }
 
-bool operator>(const String& s1, const String& s2)
+String::CharProxy::operator char() const
 {
-	return (strcmp(s1.Cstr(), s2.Cstr()) > 0);
+    return m_proxy_buff.GetR()[m_index];
+}
+
+bool operator==(const String& s1_, const String& s2_)
+{
+	return !(strcmp(s1_.Cstr(), s2_.Cstr()));
+}
+
+bool operator<(const String& s1_, const String& s2_)
+{
+	return (strcmp(s1_.Cstr(), s2_.Cstr()) < 0);
+}
+
+bool operator>(const String& s1_, const String& s2_)
+{
+	return (strcmp(s1_.Cstr(), s2_.Cstr()) > 0);
 }
 
 }//namespace ilrd
