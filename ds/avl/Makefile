@@ -1,3 +1,5 @@
+# Auto-generated Makefile for avl
+
 CC = gcc
 BASE_CFLAGS = -ansi -pedantic-errors -Wall -Wextra -fPIC
 DEBUG_FLAGS = -g -DDEBUG
@@ -6,71 +8,82 @@ RELEASE_FLAGS = -O3 -DNDEBUG
 CFLAGS_DEBUG = $(BASE_CFLAGS) $(DEBUG_FLAGS)
 CFLAGS_RELEASE = $(BASE_CFLAGS) $(RELEASE_FLAGS)
 
-INCLUDE_DIR = include
+PROJECT_NAME = avl
 SRC_DIR = src
 TEST_DIR = test
-BIN_DEBUG_DIR = bin/debug
-BIN_RELEASE_DIR = bin/release
+INC_DIR = include
+BIN_DEBUG = bin/debug
+BIN_RELEASE = bin/release
 
-PROJECT_NAME = avl
+UTILS_INCLUDE = -I ../../utils/include -I ../../utils/test
+UTILS_OBJ = ../../utils/utils.o
 
-TARGET_DEBUG = $(PROJECT_NAME)_debug
-TARGET_RELEASE = $(PROJECT_NAME)_release
+TARGET_DEBUG = $(BIN_DEBUG)/$(PROJECT_NAME).out
+TARGET_RELEASE = $(BIN_RELEASE)/$(PROJECT_NAME).out
 
-SRC_FILE = $(SRC_DIR)/$(PROJECT_NAME).c
-TEST_FILE = $(TEST_DIR)/$(PROJECT_NAME)_test.c
-INC_FILE = $(INCLUDE_DIR)/$(PROJECT_NAME).h
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_DEBUG = $(patsubst $(SRC_DIR)/%.c,$(BIN_DEBUG)/%.o,$(SRC_FILES))
+OBJ_RELEASE = $(patsubst $(SRC_DIR)/%.c,$(BIN_RELEASE)/%.o,$(SRC_FILES))
 
-SRC_OBJ_DEBUG = $(BIN_DEBUG_DIR)/$(PROJECT_NAME).o
-SRC_OBJ_RELEASE = $(BIN_RELEASE_DIR)/$(PROJECT_NAME).o
+# ➤ Add dependency project names here (e.g., DEPENDENCIES = dll oll dynamic_vector)
+DEPENDENCIES = 
 
-SHARED_LIB_DEBUG = $(BIN_DEBUG_DIR)/lib_debug_$(PROJECT_NAME).so
-SHARED_LIB_RELEASE = $(BIN_RELEASE_DIR)/lib_release_$(PROJECT_NAME).so
+DEP_INCLUDE = $(foreach dep,$(DEPENDENCIES),-I ../$(dep)/include)
+DEP_OBJ_DEBUG = $(foreach dep,$(DEPENDENCIES),$(shell find ../$(dep)/bin/debug -type f -name "*.o" ! -name "*test*"))
+DEP_OBJ_RELEASE = $(foreach dep,$(DEPENDENCIES),$(shell find ../$(dep)/bin/release -type f -name "*.o" ! -name "*test*"))
 
-.PHONY: all debug release coverage clean run run_release vlg gdb
+.PHONY: all debug release run run_release clean vlg gdb
 
 all: debug
 
-debug: $(TARGET_DEBUG)
-release: $(TARGET_RELEASE)
+debug: $(BIN_DEBUG) $(TARGET_DEBUG)
 
-$(SHARED_LIB_DEBUG): $(SRC_OBJ_DEBUG) | $(BIN_DEBUG_DIR)
-	@$(CC) -shared -o $@ $^
+release: $(BIN_RELEASE) $(TARGET_RELEASE)
 
-$(SHARED_LIB_RELEASE): $(SRC_OBJ_RELEASE) | $(BIN_RELEASE_DIR)
-	@$(CC) -shared -o $@ $^
+$(BIN_DEBUG):
+	mkdir -p $(BIN_DEBUG)
 
-$(BIN_DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS_DEBUG) -I$(INCLUDE_DIR) -c $< -o $@
+$(BIN_RELEASE):
+	mkdir -p $(BIN_RELEASE)
 
-$(BIN_RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_RELEASE_DIR)
-	@$(CC) $(CFLAGS_RELEASE) -I$(INCLUDE_DIR) -c $< -o $@
+# Compile source files
+$(BIN_DEBUG)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS_DEBUG) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -c $< -o $@
 
-$(TARGET_DEBUG): $(TEST_FILE) $(SHARED_LIB_DEBUG)
-	@$(CC) $(CFLAGS_DEBUG) -I$(INCLUDE_DIR) $^ -o $@
+$(BIN_RELEASE)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -c $< -o $@
 
-$(TARGET_RELEASE): $(TEST_FILE) $(SHARED_LIB_RELEASE)
-	@$(CC) $(CFLAGS_RELEASE) -I$(INCLUDE_DIR) $^ -o $@
+# Build executable (debug)
+$(TARGET_DEBUG): $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+	@[ -f $(UTILS_OBJ) ] || (echo "utils.o not found. Please build utils first." && exit 1)
+	@for dep in $(DEPENDENCIES); do \
+		make -C ../$$dep || exit 1; \
+	done
+	$(CC) $(CFLAGS_DEBUG) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(UTILS_OBJ) $(TEST_DIR)/$(PROJECT_NAME)_test.c
 
+# Build executable (release)
+$(TARGET_RELEASE): $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+	@[ -f $(UTILS_OBJ) ] || (echo "utils.o not found. Please build utils first." && exit 1)
+	@for dep in $(DEPENDENCIES); do \
+		make -C ../$$dep release || exit 1; \
+	done
+	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(UTILS_OBJ) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+
+# Run targets
 run: debug
-	@echo "DEBUG MODE"
-	@LD_LIBRARY_PATH=$(BIN_DEBUG_DIR) ./$(TARGET_DEBUG)
+	./$(TARGET_DEBUG)
 
 run_release: release
-	@echo "RELEASE MODE"
-	@LD_LIBRARY_PATH=$(BIN_RELEASE_DIR) ./$(TARGET_RELEASE)
+	./$(TARGET_RELEASE)
 
-vlg: $(TARGET_DEBUG)
-	LD_LIBRARY_PATH=$(BIN_DEBUG_DIR) valgrind --leak-check=full --track-origins=yes ./$(TARGET_DEBUG)
+# Tools
+vlg: debug
+	valgrind --leak-check=full ./$(TARGET_DEBUG)
 
-gdb: $(TARGET_DEBUG)
-	@echo "GDB MODE"
-	@LD_LIBRARY_PATH=$(BIN_DEBUG_DIR) gdb ./$(TARGET_DEBUG)
-	
-$(BIN_DEBUG_DIR) $(BIN_RELEASE_DIR):
-	mkdir -p $@
+gdb: debug
+	gdb ./$(TARGET_DEBUG)
 
+# Cleanup
 clean:
-	@rm -rf $(TARGET_DEBUG) $(TARGET_RELEASE) \
-	       $(BIN_DEBUG_DIR)/*.o $(BIN_DEBUG_DIR)/*.so \
-	       $(BIN_RELEASE_DIR)/*.o $(BIN_RELEASE_DIR)/*.so
+	rm -rf $(BIN_DEBUG) $(BIN_RELEASE)
+
