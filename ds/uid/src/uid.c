@@ -11,6 +11,7 @@
 #include <netinet/in.h> /* struct in_addr */
 
 #include "uid.h"
+#include "utils.h"
 
 /************************************define************************************/
 #define TRUE	(1)
