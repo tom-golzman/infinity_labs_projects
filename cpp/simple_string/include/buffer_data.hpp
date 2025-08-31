@@ -17,7 +17,7 @@ class BufferData
 public:
     static BufferData<T>* AllocateBuff(size_t size_);
     void Attach();
-    void Detach();
+    void Detach() NOEXCEPT;
     
     T* GetBuff();
     const T* GetBuff() const;
@@ -35,6 +35,8 @@ private:
     
     BufferData(const BufferData<T>&);
     BufferData<T>& operator=(const BufferData<T>&);
+
+    void DestroyBuff(BufferData<T>* buff_);
 };
 
 //=================== Implementation ===================//
@@ -57,9 +59,29 @@ template <typename T>
 BufferData<T>* BufferData<T>::AllocateBuff(size_t size_)
 {
     size_t total_size = sizeof(BufferData) + ((size_ - 1) * sizeof(T));
-    void* ret = operator new(total_size);
+    void* ret = NULL;
+    
+    try
+    {
+        ret = operator new(total_size);
+        return new(ret) BufferData(size_);
+    }
 
-    return new(ret) BufferData(size_);
+    catch (...)
+    {
+        operator delete(ret);
+        throw;
+    }
+}
+
+template <typename T>
+void BufferData<T>::DestroyBuff(BufferData<T>* buff_)
+{
+    assert(buff_);
+
+    buff_->~BufferData();
+
+    operator delete(buff_);
 }
 
 template <typename T>
@@ -69,7 +91,7 @@ void BufferData<T>::Attach()
 }
 
 template <typename T>
-void BufferData<T>::Detach()
+void BufferData<T>::Detach() NOEXCEPT
 {
     assert(m_rc > 0);
 
@@ -77,7 +99,7 @@ void BufferData<T>::Detach()
 
     if(0 == m_rc) //buffer isn't shared
     {
-        delete this; //operator delete??
+        DestroyBuff(this);
     }
 }
 
@@ -105,12 +127,12 @@ BufferData<T>* BufferData<T>::GetUniqueBuff()
 
     try
     {
-        std::copy(m_arr, m_arr + m_size, ret->m_arr);
+        std::copy(GetBuff(), GetBuff() + m_size, ret->GetBuff());
     }
 
     catch(...)
     {
-        delete ret; //operator delete??
+        DestroyBuff(ret);
         throw;
     }
 
