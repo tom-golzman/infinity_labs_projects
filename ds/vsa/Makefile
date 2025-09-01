@@ -1,59 +1,89 @@
+# Auto-generated Makefile for vsa
+
 CC = gcc
-BASE_CFLAGS = -ansi -pedantic-errors -Wall -Wextra
+BASE_CFLAGS = -ansi -pedantic-errors -Wall -Wextra -fPIC
 DEBUG_FLAGS = -g -DDEBUG
 RELEASE_FLAGS = -O3 -DNDEBUG
 
 CFLAGS_DEBUG = $(BASE_CFLAGS) $(DEBUG_FLAGS)
 CFLAGS_RELEASE = $(BASE_CFLAGS) $(RELEASE_FLAGS)
 
-INCLUDE_DIR = include
+PROJECT_NAME = vsa
 SRC_DIR = src
 TEST_DIR = test
-BIN_DEBUG_DIR = bin/debug
-BIN_RELEASE_DIR = bin/release
+INC_DIR = include
+BIN_DEBUG = bin/debug
+BIN_RELEASE = bin/release
 
-PROJECT_NAME = vsa
+UTILS_INCLUDE = -I ../../utils/include -I ../../utils/test
+UTILS_OBJ = ../../utils/utils.o
 
-TARGET_DEBUG = $(PROJECT_NAME)_debug
-TARGET_RELEASE = $(PROJECT_NAME)_release
+TARGET_DEBUG = $(BIN_DEBUG)/$(PROJECT_NAME).out
+TARGET_RELEASE = $(BIN_RELEASE)/$(PROJECT_NAME).out
 
-SRC_FILE = $(SRC_DIR)/$(PROJECT_NAME).c
-TEST_FILE = $(TEST_DIR)/$(PROJECT_NAME)_test.c
-INC_FILE = $(INCLUDE_DIR)/$(PROJECT_NAME).h
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_DEBUG = $(patsubst $(SRC_DIR)/%.c,$(BIN_DEBUG)/%.o,$(SRC_FILES))
+OBJ_RELEASE = $(patsubst $(SRC_DIR)/%.c,$(BIN_RELEASE)/%.o,$(SRC_FILES))
 
-SRC_OBJ_DEBUG = $(BIN_DEBUG_DIR)/$(PROJECT_NAME).o
-SRC_OBJ_RELEASE = $(BIN_RELEASE_DIR)/$(PROJECT_NAME).o
+# ➤ Add dependency project names here (e.g., DEPENDENCIES = dll oll dynamic_vector)
+DEPENDENCIES = 
 
-.PHONY: all debug release coverage clean run run_release vlg
+DEP_INCLUDE = $(foreach dep,$(DEPENDENCIES),-I ../$(dep)/include)
+DEP_OBJ_DEBUG = $(foreach dep,$(DEPENDENCIES),$(shell find ../$(dep)/bin/debug -type f -name "*.o" ! -name "*test*"))
+DEP_OBJ_RELEASE = $(foreach dep,$(DEPENDENCIES),$(shell find ../$(dep)/bin/release -type f -name "*.o" ! -name "*test*"))
+
+.PHONY: all debug release run run_release clean vlg gdb
 
 all: debug
 
-debug: $(TARGET_DEBUG)
-release: $(TARGET_RELEASE)
+debug: $(BIN_DEBUG) $(TARGET_DEBUG)
 
-$(BIN_DEBUG_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_DEBUG_DIR)
-	@$(CC) $(CFLAGS_DEBUG)   -I$(INCLUDE_DIR) -c $< -o $@
+release: $(BIN_RELEASE) $(TARGET_RELEASE)
 
-$(BIN_RELEASE_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_RELEASE_DIR)
-	@$(CC) $(CFLAGS_RELEASE) -I$(INCLUDE_DIR) -c $< -o $@
+$(BIN_DEBUG):
+	mkdir -p $(BIN_DEBUG)
 
-$(TARGET_DEBUG): $(SRC_OBJ_DEBUG) $(TEST_FILE)
-	@$(CC) $(CFLAGS_DEBUG)   $^ -I$(INCLUDE_DIR) -o $@
+$(BIN_RELEASE):
+	mkdir -p $(BIN_RELEASE)
 
-$(TARGET_RELEASE): $(SRC_OBJ_RELEASE) $(TEST_FILE)
-	@$(CC) $(CFLAGS_RELEASE) $^ -I$(INCLUDE_DIR) -o $@
-	
+# Compile source files
+$(BIN_DEBUG)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS_DEBUG) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -c $< -o $@
+
+$(BIN_RELEASE)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -c $< -o $@
+
+# Build executable (debug)
+$(TARGET_DEBUG): $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+	@[ -f $(UTILS_OBJ) ] || (echo "utils.o not found. Please build utils first." && exit 1)
+	@for dep in $(DEPENDENCIES); do \
+		make -C ../$$dep || exit 1; \
+	done
+	$(CC) $(CFLAGS_DEBUG) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(UTILS_OBJ) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+
+# Build executable (release)
+$(TARGET_RELEASE): $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+	@[ -f $(UTILS_OBJ) ] || (echo "utils.o not found. Please build utils first." && exit 1)
+	@for dep in $(DEPENDENCIES); do \
+		make -C ../$$dep release || exit 1; \
+	done
+	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(UTILS_OBJ) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+
+# Run targets
 run: debug
-	@./$(TARGET_DEBUG)
+	./$(TARGET_DEBUG)
 
 run_release: release
-	@./$(TARGET_RELEASE)
-	
-vlg: debug
-	valgrind --leak-check=full --track-origins=yes ./$(TARGET_DEBUG)
+	./$(TARGET_RELEASE)
 
-$(BIN_DEBUG_DIR) $(BIN_RELEASE_DIR):
-	@mkdir -p $@
-	
+# Tools
+vlg: debug
+	valgrind --leak-check=full ./$(TARGET_DEBUG)
+
+gdb: debug
+	gdb ./$(TARGET_DEBUG)
+
+# Cleanup
 clean:
-	rm -rf $(TARGET_DEBUG) $(TARGET_RELEASE)
+	rm -rf $(BIN_DEBUG) $(BIN_RELEASE)
+
