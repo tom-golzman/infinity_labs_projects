@@ -54,20 +54,20 @@ $(BIN_RELEASE)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -c $< -o $@
 
 # Build executable (debug)
-$(TARGET_DEBUG): $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+$(TARGET_DEBUG): $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(TEST_DIR)/avl_test.c
 	@[ -f $(UTILS_OBJ) ] || (echo "utils.o not found. Please build utils first." && exit 1)
 	@for dep in $(DEPENDENCIES); do \
 		make -C ../$$dep || exit 1; \
 	done
-	$(CC) $(CFLAGS_DEBUG) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(UTILS_OBJ) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+	$(CC) $(CFLAGS_DEBUG) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_DEBUG) $(DEP_OBJ_DEBUG) $(UTILS_OBJ) $(TEST_DIR)/avl_test.c
 
 # Build executable (release)
-$(TARGET_RELEASE): $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+$(TARGET_RELEASE): $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(TEST_DIR)/avl_test.c
 	@[ -f $(UTILS_OBJ) ] || (echo "utils.o not found. Please build utils first." && exit 1)
 	@for dep in $(DEPENDENCIES); do \
 		make -C ../$$dep release || exit 1; \
 	done
-	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(UTILS_OBJ) $(TEST_DIR)/$(PROJECT_NAME)_test.c
+	$(CC) $(CFLAGS_RELEASE) $(UTILS_INCLUDE) $(DEP_INCLUDE) -I $(INC_DIR) -o $@ $(OBJ_RELEASE) $(DEP_OBJ_RELEASE) $(UTILS_OBJ) $(TEST_DIR)/avl_test.c
 
 # Run targets
 run: debug

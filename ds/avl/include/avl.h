@@ -1,10 +1,8 @@
 #ifndef __ILRD_AVL_H__
 #define __ILRD_AVL_H__
 
-/************************************includes************************************/
-#include <stddef.h> /* size_t */
+#include <stddef.h>
 
-/************************************typedef************************************/
 typedef struct avl avl_t;
 
 /**
@@ -28,7 +26,6 @@ typedef int (*avl_comparer_t)(const void* current_data, const void* data_to_comp
 **/
 typedef int (*avl_action_func_t)(void* item, void* param);
 
-/************************************Functions************************************/
 /**
 	@DESCRIPTION: Creates an AVL tree object.
 	@PARAMS:
@@ -153,7 +150,6 @@ size_t AVLMultiFind(const avl_t* avl, const void** keys, size_t keys_size, void*
 */
 size_t AVLMultiRemove(avl_t* avl, const void** keys, size_t keys_size, void** out_result);
 
-/************************************Print Functions************************************/
 typedef void (*print_func_t)(const void* data);
 void PrintTree(avl_t* avl, print_func_t print_func);
 

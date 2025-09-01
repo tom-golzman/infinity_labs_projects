@@ -1,25 +1,17 @@
 /**
 	Written By: Tom Golzman
 	Date: 26/05/2025
-	Reviewed By: Sami
 **/
 
-/************************************includes************************************/
-#include <assert.h> /* assert() */
-#include <stdlib.h> /* malloc() */
-#include <stdio.h> 	/* printf() */
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "avl.h"
-
-/************************************define************************************/
-#define TRUE 	(1)
-#define FALSE 	(0)
-#define SUCCESS (0)
-#define FAIL 	(1)
+#include "utils.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-/************************************typedef************************************/
 typedef struct avl_node {
 	void* key;
 	void* data;
@@ -38,7 +30,6 @@ enum {
 	RIGHT_CHILD
 };
 
-/**********************Private Functions Forward Decleration**********************/
 static void DestroyHelper(avl_node_t* node);
 static size_t SizeHelper(avl_node_t* node);
 static void* FindHelper(avl_node_t* node, const void* key, avl_comparer_t comparer, void* param);
@@ -53,7 +44,6 @@ static avl_node_t* RemoveHelper(avl_t* avl, avl_node_t* node, const void* key, v
 static avl_node_t* FindMinNode(avl_node_t* node);
 static avl_node_t* Balance(avl_node_t* node);
 
-/************************************Functions************************************/
 avl_t* AVLCreate(avl_comparer_t comparer, void* param)
 {
 	avl_t* avl = NULL;
@@ -75,7 +65,10 @@ avl_t* AVLCreate(avl_comparer_t comparer, void* param)
 
 void AVLDestroy(avl_t* avl)
 {
-	assert(NULL != avl);
+	if (NULL == avl)
+	{
+		return;
+	}
 		
 	if (!AVLIsEmpty(avl))
 	{
@@ -225,7 +218,6 @@ size_t AVLMultiRemove(avl_t* avl, const void** keys, size_t keys_size, void** ou
 	return (removed_flag + AVLMultiFind(avl, keys, keys_size - 1, out_result));	
 }
 
-/************************************Private Functions************************************/
 static void DestroyHelper(avl_node_t* node)
 {
 	if (NULL == node)
