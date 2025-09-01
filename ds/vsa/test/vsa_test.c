@@ -4,15 +4,9 @@
 #include <assert.h>
 
 #include "vsa.h"
+#include "test_utils.h"
 
 /************************************define************************************/
-#define GREEN "\033[1;32m"
-#define RED "\033[1;31m"
-#define RESET "\033[0m"
-#define BOLD "\033[1m"
-#define BOLD_TITLE "\033[1;4m"
-#define TITLE "\033[4m"
-
 #define WORD_SIZE (sizeof(size_t))
 
 /************************************Functions Forward Decleration************************************/
@@ -41,113 +35,91 @@ int main(void)
 
 	printf("\n");
 	
-	return (0);
+	return 0;
 }
 
 /************************************Functions************************************/
 void TestInitAndMalloc()
 {
 	size_t pool_size = 1000;
-	void* pool = (void*)malloc(pool_size);
+	void* pool = NULL;
+	vsa_t* allocator = NULL;
 	void* block1 = NULL;
 	void* block2 = NULL;
-	vsa_t* allocator = VSAInit(pool, pool_size);
 
-    printf(TITLE "\nTest Init() and Malloc():\n" RESET);
-    
-    block1 = VSAMalloc(allocator, 100);
-    block2 = VSAMalloc(allocator, 200);
-    
-    if (NULL != block1 && NULL != block2 && block1 != block2)
-    {
-    	printf(GREEN "Test 1 Passed!\n" RESET);
-    }
-    else
-    {
-    	printf(RED "Test 1 Failed!\n" RESET);
-    }
-    
-    free(pool);
+	pool = malloc(pool_size);
+	allocator = VSAInit(pool, pool_size);
+	block1 = VSAMalloc(allocator, 100);
+	block2 = VSAMalloc(allocator, 200);
+
+	TITLE("Test Init() and Malloc()");
+	RUN_TEST("Allocates two blocks successfully and they differ", 
+		NULL != block1 && NULL != block2 && block1 != block2);
+
+	free(pool);
 }
 
 void TestFreeAndReuse()
 {
 	size_t pool_size = 1000;
-	void* pool = (void*)malloc(pool_size);
+	void* pool = NULL;
+	vsa_t* allocator = NULL;
 	void* block1 = NULL;
 	void* block2 = NULL;
-	vsa_t* allocator = VSAInit(pool, pool_size);
 
-    printf(TITLE "\nTest Free() and reuse same block:\n" RESET);
-    
-    block1 = VSAMalloc(allocator, 100);
-    VSAFree(block1);
-    block2 = VSAMalloc(allocator, 100);
-    
-    if (NULL != block2 && block1 == block2)
-    {
-    	printf(GREEN "Test 1 Passed!\n" RESET);
-    }
-    else
-    {
-    	printf(RED "Test 1 Failed!\n" RESET);
-    }
-    
-    free(pool);
+	pool = malloc(pool_size);
+	allocator = VSAInit(pool, pool_size);
+	block1 = VSAMalloc(allocator, 100);
+	VSAFree(block1);
+	block2 = VSAMalloc(allocator, 100);
+
+	TITLE("Test Free() and reuse same block");
+	RUN_TEST("Block reused after free", block1 == block2);
+
+	free(pool);
 }
 
 void TestLargestChunk()
 {
 	size_t pool_size = 1000;
-	size_t expected = 0;
-	size_t result = 0;
+	size_t header_size = sizeof(size_t);
 	void* pool = NULL;
 	vsa_t* allocator = NULL;
-#ifndef NDEBUG
-	size_t header_size = sizeof(size_t)*2;
-#else
-	size_t header_size = sizeof(size_t);
-#endif
-	
-    printf(TITLE "\nTest LargestChunkAvaliable():\n" RESET);	
+	size_t expected = 0;
+	size_t result = 0;
 
-	expected = pool_size - header_size*2;
-	pool = (void*)malloc(pool_size);
+#ifndef NDEBUG
+	header_size *= 2;
+#endif
+
+	expected = pool_size - 2 * header_size;
+	pool = malloc(pool_size);
 	allocator = VSAInit(pool, pool_size);
-	
-    result = VSALargestChunkAvailable(allocator);
-    
-    if (result == expected)
-    {
-    	printf(GREEN "Test 1 Passed!\n" RESET);
-    }
-    else
-    {
-        printf(RED "Test Failed! Expected %lu, Result %lu\n" RESET, (unsigned long)expected, (unsigned long)result);
-    }
-    
-    free(pool);    
+	result = VSALargestChunkAvailable(allocator);
+
+	TITLE("Test LargestChunkAvaliable()");
+	RUN_TEST("Initial largest chunk equals total - 2 headers", result == expected);
+
+	free(pool);
 }
 
 void TestLargestChunkAfterMalloc()
 {
 	size_t pool_size = 128;
+	size_t header_size = sizeof(size_t);
 	size_t allocated_data_size = 16;
 	size_t expected = 0;
 	size_t result = 0;
 	void* pool = NULL;
 	vsa_t* allocator = NULL;
-#ifndef NDEBUG
-	size_t header_size = sizeof(size_t)*2;
-#else
-	size_t header_size = sizeof(size_t);
-#endif
-	
-    printf(TITLE "\nTest LargestChunkAvaliable() after Malloc():\n" RESET);	
 
-	pool = (void*)malloc(pool_size);
-	allocator = VSAInit(pool, pool_size); 
-	
+#ifndef NDEBUG
+	header_size *= 2;
+#endif
+
+	pool = malloc(pool_size);
+	allocator = VSAInit(pool, pool_size);
+
 	if (pool_size - header_size * 3 >= allocated_data_size + WORD_SIZE)
 	{
 		expected = pool_size - (2 * header_size) - allocated_data_size - header_size;
@@ -156,46 +128,46 @@ void TestLargestChunkAfterMalloc()
 	{
 		expected = 0;
 	}
-		
-	VSAMalloc(allocator, 16);
+
+	VSAMalloc(allocator, allocated_data_size);
 	result = VSALargestChunkAvailable(allocator);
-    
-    if (result == expected)
-    {
-    	printf(GREEN "Test 1 Passed!\n" RESET);
-    }
-    else
-    {
-        printf(RED "Test Failed! Expected %lu, Result %lu\n" RESET, (unsigned long)expected, (unsigned long)result);
-    }
-    
-    free(pool);
+
+	TITLE("Test LargestChunkAvaliable() after Malloc()");
+	RUN_TEST("Expected value after malloc", result == expected);
+
+	free(pool);
 }
 
 void TestLargestChunkAfterMallocAndFree()
 {
-    size_t pool_size = 128;
-    size_t block_size = 16;
-    size_t expected = 0;
-    size_t result = 0;
-    void* pool = malloc(pool_size);
-    vsa_t* vsa = VSAInit(pool, pool_size);
-    void* b2 = NULL;
-#ifdef NDEBUG
-	size_t F0, F1, F2, F3;
-    size_t header_size = sizeof(size_t);
-#endif
-
-    printf("\n"  "Test LargestChunkAvaliable() after Malloc() and Free():\n" );
-
-    VSAMalloc(vsa, block_size);
-    b2 = VSAMalloc(vsa, block_size);
-    VSAMalloc(vsa, block_size);
-
-    VSAFree(b2);
+	size_t pool_size = 128;
+	size_t block_size = 16;
+	void* pool = NULL;
+	vsa_t* vsa = NULL;
+	void* b1 = NULL;
+	void* b2 = NULL;
+	void* b3 = NULL;
+	size_t result = 0;
+	size_t expected = 0;
 
 #ifndef NDEBUG
 	expected = block_size;
+#else
+	size_t header_size = sizeof(size_t);
+	size_t F0 = 0, F1 = 0, F2 = 0, F3 = 0;
+#endif
+
+	pool = malloc(pool_size);
+	vsa = VSAInit(pool, pool_size);
+
+	b1 = VSAMalloc(vsa, block_size);
+	b2 = VSAMalloc(vsa, block_size);
+	b3 = VSAMalloc(vsa, block_size);
+
+	VSAFree(b2);
+
+#ifndef NDEBUG
+	/* already set above */
 #else
 	F0 = pool_size - 2 * header_size;
 	F1 = ((F0 - block_size - header_size + WORD_SIZE - 1) / WORD_SIZE) * WORD_SIZE;
@@ -204,42 +176,27 @@ void TestLargestChunkAfterMallocAndFree()
 	expected = F3;
 #endif
 
-    result = VSALargestChunkAvailable(vsa);
+	result = VSALargestChunkAvailable(vsa);
 
-    if (result == expected)
-    {
-        printf(GREEN "Test Passed! Largest = %lu\n" RESET, (unsigned long)result);
-    }
-    else
-    {
-        printf(RED   "Test Failed! Expected %lu, Result %lu\n" RESET,
-               (unsigned long)expected, (unsigned long)result);
-    }
+	TITLE("Test LargestChunkAvaliable() after Malloc() and Free()");
+	RUN_TEST("Free block in the middle is reused correctly", result == expected);
 
-    free(pool);
+	free(pool);
 }
 
 void TestAlignment()
 {
 	size_t pool_size = 1000;
 	void* pool = NULL;
-	void* block = NULL;
 	vsa_t* allocator = NULL;
-	
-    printf(TITLE "\nTest alignment:\n" RESET);
-    
-    pool = (void*)malloc(pool_size);
-    allocator = VSAInit(pool, pool_size);
-    block = VSAMalloc(allocator, 1);
-    
-    if (0 == ((size_t)block % WORD_SIZE))
-    {
-    	printf(GREEN "Test 1 Passed!\n" RESET);
-    }
-    else
-    {
-    	printf(RED "Test 1 Failed!\n" RESET);
-    }
-    
-    free(pool);
+	void* block = NULL;
+
+	pool = malloc(pool_size);
+	allocator = VSAInit(pool, pool_size);
+	block = VSAMalloc(allocator, 1);
+
+	TITLE("Test alignment");
+	RUN_TEST("Returned block is aligned to word size", 0 == ((size_t)block % WORD_SIZE));
+
+	free(pool);
 }
