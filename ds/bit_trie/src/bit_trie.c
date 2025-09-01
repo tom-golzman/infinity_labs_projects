@@ -1,20 +1,16 @@
 /**
 	Written By: Tom Golzman
 	Date: 12/06/2025
-	Reviewed By: 
 **/
 
-/************************************includes************************************/
-#include <assert.h> /* assert() */
-#include <stdlib.h> /* calloc(), free() */
+#include <assert.h>
+#include <stdlib.h>
 
-#include "utils.h"	/* SUCCESS, FAIL, TRUE, FALSE, DEBUG_ONLY(), BAD_MEM() */
+#include "utils.h"
 #include "bit_trie.h"
 
-/************************************define************************************/
 enum { LEFT = 0, RIGHT = 1 , NUM_OF_CHILDREN = 2};
 
-/************************************typedef************************************/
 typedef struct btrie_node {
 	struct btrie_node* children[NUM_OF_CHILDREN];
 	int is_full;
@@ -25,7 +21,6 @@ struct bit_trie {
 	size_t num_bits;
 };
 
-/**************************Private Functions Decleration**************************/
 static btrie_node_t* CreateNode();
 static void DestroySubTree(btrie_node_t* node);
 static unsigned long GetHelper(btrie_node_t** node, size_t num_bits, size_t level, unsigned long value);
@@ -35,24 +30,20 @@ static unsigned long ResetValue(unsigned long value, size_t num_bits, size_t lev
 static void FreeHelper(btrie_node_t** node, size_t num_bits, size_t level, unsigned long value);
 static size_t CountUsedLeaves(const btrie_node_t* node, size_t num_bits, size_t level);
 
-/************************************Functions************************************/
 bit_trie_t* BitTrieCreate(size_t num_bits)
 {
 	bit_trie_t* trie = NULL;
 	
 	assert(num_bits > 0);
 	
-	/* allocate memory for the trie struct */
 	trie = (bit_trie_t*)calloc(1, sizeof(bit_trie_t));
 	if (NULL == trie)
 	{
 		return NULL;
 	}
 	
-	/* initialize trie fields */
 	trie->num_bits = num_bits;
 
-	/* return the new strie */
 	return trie;
 }
 
@@ -64,12 +55,13 @@ void BTrieDestroy(bit_trie_t* trie)
 	}
 	
 	BTrieClear(trie);
-	/*
+	
 	DEBUG_ONLY(
-		trie->root = BAD_MEM(btrie_node_t);
+		trie->root.children[LEFT] = BAD_MEM(btrie_node_t*);
+		trie->root.children[RIGHT] = BAD_MEM(btrie_node_t*);
+		trie->root.is_full = FALSE;
 		trie->num_bits = 0;
-		trie->is_full = FALSE;
-	);*/
+	);
 	
 	free(trie);
 }
@@ -82,7 +74,6 @@ unsigned long BTrieGet(bit_trie_t* trie, unsigned long value)
 	
 	root = &(trie->root);
 	
-	/* call the recursive function */
 	return GetHelper(&root, trie->num_bits, 0, value);
 }
 
@@ -90,7 +81,6 @@ void BTrieClear(bit_trie_t* trie)
 {
 	assert(NULL != trie);
 	
-	/* destroy the left and right subtrees of the root */
 	DestroySubTree(trie->root.children[LEFT]);
 	DestroySubTree(trie->root.children[RIGHT]);
 }
@@ -104,7 +94,6 @@ void BTrieFree(bit_trie_t* trie, unsigned long value)
 	
 	root = &(trie->root);
 	
-	/* call the recursive function */
 	FreeHelper(&(root), trie->num_bits, 0, value);
 }
 
@@ -121,7 +110,6 @@ size_t BTrieCountFree(const bit_trie_t* trie)
 	return total_possible_leaves - used_leaves;
 }
 
-/************************************Private Functions************************************/
 static btrie_node_t* CreateNode()
 {
 	btrie_node_t* new_node = (btrie_node_t*)calloc(1, sizeof(btrie_node_t));
@@ -145,6 +133,7 @@ static void DestroySubTree(btrie_node_t* node)
 	
 	DestroySubTree(node->children[LEFT]);
 	node->children[LEFT] = NULL;
+
 	DestroySubTree(node->children[RIGHT]);
 	node->children[RIGHT] = NULL;
 	
@@ -163,7 +152,6 @@ static unsigned long GetHelper(btrie_node_t** node, size_t num_bits, size_t leve
 		
 	assert(NULL != node);
 	
-	/* if the subtree is full */
 	if (IsFull(*node))
 	{
 		return 0;
@@ -181,7 +169,6 @@ static unsigned long GetHelper(btrie_node_t** node, size_t num_bits, size_t leve
 	/* if the leaf isn't at tree's level - create a node*/
 	if (NULL == *node)
 	{
-		/* create a new node */
 		*node = CreateNode();
 		if (NULL == *node)
 		{
@@ -250,7 +237,6 @@ static void FreeHelper(btrie_node_t** node, size_t num_bits, size_t level, unsig
 	
 	bit = GetBit(value, num_bits, level);
 
-	/* call the recursive function */	
 	FreeHelper(&(*node)->children[bit], num_bits, level + 1, value);
 	
 	/* update the field is_full */
