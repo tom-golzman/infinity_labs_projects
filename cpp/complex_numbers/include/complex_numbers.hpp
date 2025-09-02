@@ -1,14 +1,12 @@
 /**
 	Written By: Tom Golzman
 	Date: 25/08/2025
-	Reviewed By: Yuval Almog
 **/
 
 #ifndef __ILRD_COMPLEX_NUMBERS_HPP__
 #define __ILRD_COMPLEX_NUMBERS_HPP__
 
-/*************************************** Includes ****************************************/
-#include <iostream> /* std::ostream, std::istream */
+#include <iostream>
 
 namespace ilrd
 {
@@ -49,7 +47,6 @@ private:
     double m_imag;
 };
 
-/************************************ inline functions *************************************/
 inline Complex::Complex(double real_, double imag_): m_real(real_), m_imag(imag_)
 {}
 
