@@ -1,10 +1,8 @@
 #ifndef __ILRD_PRIORITY_QUEUE_H__
 #define __ILRD_PRIORITY_QUEUE_H__
 
-/************************************includes************************************/
-#include <stddef.h> /* size_t */
+#include <stddef.h>
 
-/************************************typedef************************************/
 typedef struct pq priority_queue_t;
 
 /*
@@ -25,7 +23,6 @@ typedef int (*pq_comparer_t)(const void* data1, const void* data2, void* param);
 */
 typedef int (*pq_is_match_t)(const void* data1, const void* data2);
 
-/************************************Functions************************************/
 /*
 	DESCRIPTION: Creates a new priority queue
 	RETURNS: priority_queue_t* - a pointer to a new empty priority queue or NULL on error.
@@ -131,10 +128,5 @@ void PQClear(priority_queue_t* pq);
 		Time: O(n)
 */
 void* PQErase(priority_queue_t* pq, pq_is_match_t is_match, void* data);
-
-/*
-	DESCRIPTION: Print function
-*/
-void PQPrintTree(priority_queue_t* pq);
 
 #endif /* __ILRD_PRIORITY_QUEUE_H__ */

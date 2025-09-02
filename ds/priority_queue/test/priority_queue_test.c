@@ -1,10 +1,8 @@
-/************************************includes************************************/
-#include <stdio.h> /* printf */
-#include <stdlib.h> /* malloc, free */
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "test_utils.h" /* colors, titles, status, boolean */
+#include "test_utils.h"
 #include "priority_queue.h"
-
 
 typedef struct
 {
@@ -15,11 +13,20 @@ typedef struct
 int PQCmp(const void* data1, const void* data2, void* param)
 {
 	(void) param;
-
 	return (((pq_data_t*)data1)->key - ((pq_data_t*)data2)->key);
 }
 
-/************************************function declarations************************************/
+int CompareInts(const void* a, const void* b, void* param)
+{
+	(void)param;
+	return (*(int*)a - *(int*)b);
+}
+
+int MatchInts(const void* a, const void* b)
+{
+	return (*(int*)a == *(int*)b);
+}
+
 void TestPQCreate();
 void TestPQDestroyNULL();
 void TestPQEnqueuePeek();
@@ -31,14 +38,9 @@ void TestPQErase();
 void TestPQPeekEmpty();
 void TestPQClearEmpty();
 void TestPQEnqueuePeekMultipleSamePriority();
-void Test();
 
-int CompareInts(const void* a, const void* b, void* param);
-int MatchInts(const void* a, const void* b);
-
-/************************************main************************************/
 int main(void)
-{/*
+{
 	TestPQCreate();
 	TestPQDestroyNULL();
 	TestPQEnqueuePeek();
@@ -49,46 +51,35 @@ int main(void)
 	TestPQClear();
 	TestPQClearEmpty();
 	TestPQErase();
-	TestPQPeekEmpty(); */
+	TestPQPeekEmpty();
 
-	Test();
-
-    printf("\n");
-
-    return (0);
+	printf("\n");
+	return 0;
 }
 
-/************************************Tests************************************/
 void TestPQCreate()
 {
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    
-    printf(BOLD_TITLE "\nTest: PQCreate()\n" RESET);
-    
-    if (NULL != pq && PQIsEmpty(pq))
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Queue not initialized properly. IsEmpty()=%d\n", PQIsEmpty(pq));
-    }
-    PQDestroy(pq);
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
+	TITLE("Test: PQCreate()");
+
+	RUN_TEST("PQ created and is empty", (NULL != pq && PQIsEmpty(pq)));
+
+	PQDestroy(pq);
 }
 
 void TestPQDestroyNULL()
 {
-    printf(BOLD_TITLE "\nTest: PQDestroy(NULL)\n" RESET);
-    PQDestroy(NULL);
-    printf(GREEN "TEST 1 PASSED\n" RESET);
+	TITLE("Test: PQDestroy(NULL)");
+	PQDestroy(NULL);
+	RUN_TEST("No crash on NULL destroy", TRUE);
 }
 
 void TestPQEnqueuePeek()
 {
-    int a = 10, b = 20, c = 5, d = 30, e = 40, f = 15;
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    printf(BOLD_TITLE "\nTest: PQEnqueue() + PQPeek()\n" RESET);
+	int a = 10, b = 20, c = 5, d = 30, e = 40, f = 15;
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
+	TITLE("Test: PQEnqueue() + PQPeek()");
 	PQEnqueue(pq, &a);
 	PQEnqueue(pq, &b);
 	PQEnqueue(pq, &c);
@@ -96,36 +87,23 @@ void TestPQEnqueuePeek()
 	PQEnqueue(pq, &e);
 	PQEnqueue(pq, &f);
 
-    if (*(int*)PQPeek(pq) == 5)
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Top element = %d\n", *(int*)PQPeek(pq));
-    }
-    
-    PQDestroy(pq);
+	RUN_TEST("Peek gives min", *(int*)PQPeek(pq) == 5);
+
+	PQDestroy(pq);
 }
 
 void TestPQEnqueuePeekMultipleSamePriority()
 {
-    int a = 10, b = 10;
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    printf(BOLD_TITLE "\nTest: Enqueue with same priorities\n" RESET);
+	int a = 10, b = 10;
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-    PQEnqueue(pq, &a);
-    PQEnqueue(pq, &b);
+	TITLE("Test: Enqueue with same priorities");
+	PQEnqueue(pq, &a);
+	PQEnqueue(pq, &b);
 
-    if (*(int*)PQPeek(pq) == 10 && PQSize(pq) == 2)
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Same priority values not handled correctly\n");
-    }
-    PQDestroy(pq);
+	RUN_TEST("Same priority values handled", *(int*)PQPeek(pq) == 10 && PQSize(pq) == 2);
+
+	PQDestroy(pq);
 }
 
 void TestPQDequeue()
@@ -133,193 +111,102 @@ void TestPQDequeue()
 	int a = 30, b = 20, c = 5;
 	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-	printf(BOLD_TITLE "\nTest: PQDequeue()\n" RESET);
-
+	TITLE("Test: PQDequeue()");
 	PQEnqueue(pq, &a);
 	PQEnqueue(pq, &b);
 	PQEnqueue(pq, &c);
 	PQDequeue(pq);
 
-	if (*(int*)PQPeek(pq) == 20)
-	{
-		printf(GREEN "TEST 1 PASSED\n" RESET);
-	}
-	else
-	{
-		printf(RED "TEST 1 FAILED: " RESET "Top after dequeue = %d\n", *(int*)PQPeek(pq));
-	}
-	
+	RUN_TEST("Top after dequeue is next min", *(int*)PQPeek(pq) == 20);
+
 	PQDestroy(pq);
 }
 
 void TestPQIsEmpty()
 {
-    int a = 1;
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    printf(BOLD_TITLE "\nTest: PQIsEmpty()\n" RESET);
+	int a = 1;
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-    if (PQIsEmpty(pq))
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
+	TITLE("Test: PQIsEmpty()");
 
-    PQEnqueue(pq, &a);
-    if (!PQIsEmpty(pq))
-    {
-        printf(GREEN "TEST 2 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 2 FAILED: " RESET "Should not be empty\n");
-    }
-    PQDestroy(pq);
+	RUN_TEST("Empty after creation", PQIsEmpty(pq));
+
+	PQEnqueue(pq, &a);
+	RUN_TEST("Not empty after insert", !PQIsEmpty(pq));
+
+	PQDestroy(pq);
 }
 
 void TestPQSize()
 {
-    int a = 1, b = 2;
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    printf(BOLD_TITLE "\nTest: PQSize()\n" RESET);
+	int a = 1, b = 2;
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-    PQEnqueue(pq, &a);
-    PQEnqueue(pq, &b);
+	TITLE("Test: PQSize()");
+	PQEnqueue(pq, &a);
+	PQEnqueue(pq, &b);
 
-    if (PQSize(pq) == 2)
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Wrong size\n");
-    }
-    PQDestroy(pq);
+	RUN_TEST("Size == 2 after 2 inserts", PQSize(pq) == 2);
+
+	PQDestroy(pq);
 }
 
 void TestPQClear()
 {
-    int a = 1, b = 2;
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    printf(BOLD_TITLE "\nTest: PQClear()\n" RESET);
+	int a = 1, b = 2;
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-    PQEnqueue(pq, &a);
-    PQEnqueue(pq, &b);
-    PQClear(pq);
+	TITLE("Test: PQClear()");
+	PQEnqueue(pq, &a);
+	PQEnqueue(pq, &b);
+	PQClear(pq);
 
-    if (PQIsEmpty(pq))
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Queue not cleared\n");
-    }
-    
-    PQDestroy(pq);
+	RUN_TEST("Cleared queue is empty", PQIsEmpty(pq));
+
+	PQDestroy(pq);
 }
 
 void TestPQClearEmpty()
 {
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    
-    printf(BOLD_TITLE "\nTest: PQClear() on empty queue\n" RESET);
-    
-    PQClear(pq);
-    
-    printf(GREEN "TEST 1 PASSED\n" RESET);
-    
-    PQDestroy(pq);
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
+
+	TITLE("Test: PQClear() on empty queue");
+
+	PQClear(pq);
+
+	RUN_TEST("Clearing empty queue does not crash", TRUE);
+
+	PQDestroy(pq);
 }
 
 void TestPQErase()
 {
-    int a = 1, b = 20, c = 300, x = 20000, y = 99;
-    void* result = NULL;
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    
-    printf(BOLD_TITLE "\nTest: PQErase()\n" RESET);
+	int a = 1, b = 20, c = 300, x = 20000, y = 99;
+	void* result = NULL;
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-    PQEnqueue(pq, &a);
-    PQEnqueue(pq, &b);
-    PQEnqueue(pq, &c);
-    PQEnqueue(pq, &x);
-   
-    result = PQErase(pq, MatchInts, &b);
-   
-    if (*(int*)result == 20 && PQSize(pq) == 3)
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Erase failed. result=%d\n", *(int*)result);
-    }
+	TITLE("Test: PQErase()");
+	PQEnqueue(pq, &a);
+	PQEnqueue(pq, &b);
+	PQEnqueue(pq, &c);
+	PQEnqueue(pq, &x);
 
-    result = PQErase(pq, MatchInts, &y);
-    if (result == NULL)
-    {
-        printf(GREEN "TEST 2 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 2 FAILED: " RESET "Unexpected erase\n");
-    }
-    PQDestroy(pq);
+	result = PQErase(pq, MatchInts, &b);
+	RUN_TEST("Erased correct element", (*(int*)result == 20 && PQSize(pq) == 3));
+
+	result = PQErase(pq, MatchInts, &y);
+	RUN_TEST("No match returns NULL", result == NULL);
+
+	PQDestroy(pq);
 }
 
 void TestPQPeekEmpty()
 {
-    priority_queue_t* pq = PQCreate(CompareInts, NULL);
-    printf(BOLD_TITLE "\nTest: PQPeek() on empty queue\n" RESET);
+	priority_queue_t* pq = PQCreate(CompareInts, NULL);
 
-    if (PQPeek(pq) == NULL)
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Peek not NULL on empty\n");
-    }
-    PQDestroy(pq);
+	TITLE("Test: PQPeek() on empty queue");
+
+	RUN_TEST("Peek returns NULL", PQPeek(pq) == NULL);
+
+	PQDestroy(pq);
 }
-
-void Test()
-{
-	pq_data_t a = {1, 100};
-	pq_data_t b = {1, 500};
-	pq_data_t peeked;
-	
-    priority_queue_t* pq = PQCreate(PQCmp, NULL);
-    
-    printf(BOLD_TITLE "\nTest: PQEnqueue() + PQPeek()\n" RESET);
-
-	PQEnqueue(pq, &a);
-	PQEnqueue(pq, &b);
-
-	peeked = *(pq_data_t*)PQPeek(pq); 
-	
-    if (peeked.value == 100)
-    {
-        printf(GREEN "TEST 1 PASSED\n" RESET);
-    }
-    else
-    {
-        printf(RED "TEST 1 FAILED: " RESET "Top element = %d\n", *(int*)PQPeek(pq));
-    }
-    
-    PQDestroy(pq);
-}
-
-
-/************************************Helpers************************************/
-int CompareInts(const void* a, const void* b, void* param)
-{
-    (void)param;
-    
-    return (*(int*)a - *(int*)b);
-}
-
-int MatchInts(const void* a, const void* b)
-{
-    return (*(int*)a == *(int*)b);
-}
-

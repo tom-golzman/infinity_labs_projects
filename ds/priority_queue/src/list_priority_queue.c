@@ -1,29 +1,20 @@
 /**
 	Written By: Tom Golzman
 	Date: 16/04/2025
-	Reviewed By: Sami
 **/
 
-/************************************includes************************************/
-#include <stdlib.h> /* malloc */
-#include <assert.h> /* assert */
+#include <stdlib.h>
+#include <assert.h>
 
 #include "oll.h"
 #include "priority_queue.h"
+#include "utils.h"
 
-/************************************define************************************/
-#define TRUE (1)
-#define FALSE (0)
-#define SUCCESS (0)
-#define FAIL (1)
-
-/************************************typedef************************************/
 struct pq
 {
     oll_t* olist;
 };
 
-/************************************Public Functions************************************/
 priority_queue_t* PQCreate(pq_comparer_t comparer, void* param)
 {
 	priority_queue_t* pq = (priority_queue_t*)malloc(sizeof(priority_queue_t));
