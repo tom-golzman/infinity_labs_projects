@@ -1,15 +1,12 @@
 #ifndef __ILRD_SCHEDULER_H__
 #define __ILRD_SCHEDULER_H__
 
-/************************************includes************************************/
-#include <time.h>	/* time_t */
-#include <stddef.h> /* size_t */
-#include <stdlib.h> /* malloc */
-#include <assert.h> /* assert */
+#include <time.h>
+#include <stddef.h>
+#include <stdlib.h>
 
-#include "uid.h" 	/* ilrd_uid_t */
+#include "uid.h"
 
-/************************************typedef************************************/
 typedef struct scheduler sched_t;
 
 enum { NOT_RESCHEDULE = 0, TO_RESCHEDULE = 1 };
@@ -41,7 +38,6 @@ typedef int (*sched_action_t)(void* optinal_param);
 */
 typedef void (*sched_cleanup_t)(void* optinal_param);
 
-/************************************Functions************************************/
 /*
 	DESCRIPTION: Creates a scheduler.
 	RETURNS: sched_t* a pointer to a scheduler, or NULL on failure.

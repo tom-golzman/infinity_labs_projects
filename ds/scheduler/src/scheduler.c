@@ -1,24 +1,17 @@
 /**
 	Written By: Tom Golzman
 	Date: 24/04/2025
-	Reviewed By: Amir Granot
 **/
 
-/************************************includes************************************/
-#define _POSIX_C_SOURCE 200112L /* for sleep() warning */
-#include <unistd.h>			/* sleep( */
+#define _POSIX_C_SOURCE 200112L
+#include <unistd.h>
+#include <assert.h>
 
-#include "priority_queue.h" /* pq functions */
-#include "task.h" 			/* task_t */
+#include "priority_queue.h"
+#include "task.h"
 #include "scheduler.h"
+#include "utils.h"
 
-/************************************define************************************/
-#define TRUE 	(1)
-#define FALSE 	(0)
-#define SUCCESS (0)
-#define FAIL 	(1)
-
-/************************************typedef************************************/
 typedef enum {
 	STOPPED = 0,
 	RUNNING
@@ -31,13 +24,11 @@ struct scheduler{
 	task_t* current_task;
 };
 
-/************************************Private Functions Forward Decleration************************************/
 static int SleepUntilExecTime(task_t* task);
 static int TaskComparer(const void* task1, const void* task2, void* param);
 static int TaskIsMatch(const void* task, const void* id);
 static int SchedRescheduleTask(sched_t* s);
 
-/************************************Functions************************************/
 sched_t* SchedCreate(void)
 {
 	priority_queue_t* pq = NULL;
@@ -236,7 +227,6 @@ void SchedClear(sched_t* s)
 	}
 }
 
-/************************************Private Functions************************************/
 static int SleepUntilExecTime(task_t* task)
 {
 	time_t now = time(NULL);
