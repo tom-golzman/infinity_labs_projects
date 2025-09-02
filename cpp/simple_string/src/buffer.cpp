@@ -11,7 +11,7 @@ namespace ilrd
 {
 
 template <>
-typename Buffer<char>::BufferData* Buffer<char>::BufferData::AllocateBuff(size_t size_)
+Buffer<char>::BufferData* Buffer<char>::BufferData::AllocateBuff(size_t size_)
 {
     assert(size_ > 0);
     
@@ -32,7 +32,7 @@ void Buffer<char>::BufferData::DestroyBuff(Buffer<char>::BufferData* buff_) NOEX
 }
 
 template <>
-typename Buffer<char>::BufferData* Buffer<char>::BufferData::GetUniqueBuff()
+Buffer<char>::BufferData* Buffer<char>::BufferData::GetUniqueBuff()
 {
     if(1 == m_rc) //buffer isn't shared
     {
