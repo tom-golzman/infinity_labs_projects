@@ -10,6 +10,7 @@ namespace ilrd
 {
 
 class String;
+class CharProxy;
 
 bool operator==(const String& s1_, const String& s2_);
 bool operator<(const String& s1_, const String& s2_);
@@ -17,40 +18,44 @@ bool operator>(const String& s1_, const String& s2_);
 
 class String
 {
+private:
+    class CharProxy;
+
 public:
     String(const char* str_); //non explicit on purpose
     
     // generated copy ctor, assignment operator, dtor
 
-    char operator[](size_t index_) const;
+    char operator[](size_t index_) const NOEXCEPT;
+    CharProxy operator[](size_t index_);
+
     void SetAt(size_t index_, const char c_);
-    char GetAt(size_t index_) const;
+    char GetAt(size_t index_) const NOEXCEPT;
 
     size_t Length() const NOEXCEPT;
     const char* Cstr() const;
 
 private:
-    class CharProxy
-    {
-        public:
-            CharProxy(size_t index_, Buffer<char>& buff_);
-            CharProxy(const CharProxy& other_);
-            
-            CharProxy& operator=(const char c_);
-            operator char() const;
-
-        private:
-            const size_t m_index;
-            Buffer<char>& m_proxy_buff;
-
-    };
-
     Buffer<char> m_buff;
 
+}; //class String
+
+class String::CharProxy
+{
 public:
-    CharProxy operator[](size_t index_);
-    
-};
+    explicit CharProxy(String* str_, size_t index_);
+    CharProxy(const CharProxy& other_);
+
+    char& operator=(const char c_);
+    char& operator=(const CharProxy& other_);
+    char* operator&();
+    operator char() const;
+
+private:
+    String* const m_str;
+    const size_t m_index;
+
+}; //class CharProxy
 
 }//namespace ilrd
 

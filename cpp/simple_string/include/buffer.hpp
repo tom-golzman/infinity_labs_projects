@@ -26,7 +26,7 @@ public:
 
     ~Buffer() NOEXCEPT;
 
-    const T* GetR() const;
+    const T* GetR() const NOEXCEPT;
     T* GetW();
 
     size_t Size() const NOEXCEPT;
@@ -114,7 +114,7 @@ Buffer<T>::~Buffer() NOEXCEPT
 }
 
 template <typename T>
-const T* Buffer<T>::GetR() const
+const T* Buffer<T>::GetR() const NOEXCEPT
 {
     return m_data->GetArr();
 }

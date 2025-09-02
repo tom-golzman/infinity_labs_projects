@@ -23,10 +23,10 @@ String::CharProxy String::operator[](size_t index_)
 {
 	assert(index_ < Length());
 
-	return CharProxy(index_, m_buff);
+	return CharProxy(this, index_);
 }
 
-char String::operator[](size_t index_) const
+char String::operator[](size_t index_) const NOEXCEPT
 {
 	assert(index_ < Length());
 
@@ -41,7 +41,7 @@ void String::SetAt(size_t index_, const char c_)
     buff[index_] = c_;
 }
 
-char String::GetAt(size_t index_) const
+char String::GetAt(size_t index_) const NOEXCEPT
 {
     assert(index_ < Length());
 
@@ -58,22 +58,33 @@ const char* String::Cstr() const
 	return m_buff.GetR();
 }
 
-String::CharProxy::CharProxy(size_t index_, Buffer<char>& buff_): m_index(index_), m_proxy_buff(buff_)
+String::CharProxy::CharProxy(String* str_, size_t index_): m_str(str_), m_index(index_)
 {
-    assert(index_ < m_proxy_buff.Size() - 1);
+    assert(index_ < str_->Length());
 }
 
-String::CharProxy& String::CharProxy::operator=(const char c_)
+char& String::CharProxy::operator=(const char c_)
 {
-    char* buff = m_proxy_buff.GetW();
-    buff[m_index] = c_;
+    m_str->SetAt(m_index, c_);
     
-    return *this;
+    return m_str->m_buff.GetW()[m_index];
+}
+
+char& String::CharProxy::operator=(const CharProxy& other_)
+{
+    m_str->SetAt(m_index, char(other_));
+    
+    return m_str->m_buff.GetW()[m_index];
+}
+
+char* String::CharProxy::operator&()
+{
+	return &(m_str->m_buff.GetW()[m_index]);
 }
 
 String::CharProxy::operator char() const
 {
-    return m_proxy_buff.GetR()[m_index];
+    return m_str->m_buff.GetR()[m_index];
 }
 
 bool operator==(const String& s1_, const String& s2_)
