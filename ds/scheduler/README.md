@@ -1,15 +1,13 @@
 # Scheduler
 
 ## Author - Tom Golzman
-This project was developed during the Infinity Labs R&D bootcamp as part of an educational deep dive into system-level C programming and data structures.
+This project was developed as part of an educational deep dive into system-level programming and data structures.
 
 ---
 
 ## Project Overview
 The Scheduler is a cooperative task scheduler written in **C89**.  
 It allows scheduling of tasks to run at specific intervals, supports recurring tasks through rescheduling, and provides controlled start/stop execution.
-
-This project was developed during the Infinity Labs R&D bootcamp as part of the systems programming and data structures curriculum.
 
 ---
 
@@ -53,7 +51,10 @@ make run
 # Run release version
 make run_release
 
+---
+
 ## The compiled executables will be placed in:
+
 bin/debug/scheduler.out
 bin/release/scheduler.out
 
